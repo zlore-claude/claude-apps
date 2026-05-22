@@ -31,7 +31,7 @@
     }
     @keyframes gl-bar { 0% { left: -40%; } 100% { left: 100%; } }
   </style>
-  <link rel="stylesheet" href="styles.css?v=aa7a5f7" />
+  <link rel="stylesheet" href="styles.css?v=b0943d5" />
 </head>
 <body>
   <div id="app-loading">
@@ -46,6 +46,10 @@
         <span>Scale</span>
         <input type="range" id="scale" min="4" max="120" value="32" />
       </label>
+      <label class="ctrl">
+        <span>Speed</span>
+        <input type="range" id="speed" min="1" max="20" value="4" />
+      </label>
       <div class="palettes" id="palettes">
         <button class="pal active" data-pal="terrain">Terrain</button>
         <button class="pal" data-pal="heat">Heat</button>
@@ -53,13 +57,14 @@
         <button class="pal" data-pal="void">Void</button>
       </div>
       <div class="actions">
-        <button id="regen-btn" type="button">Regenerate</button>
+        <button id="play-btn" type="button">Pause</button>
+        <button id="new-btn" type="button" class="ghost">New</button>
         <button id="save-btn" type="button" class="ghost">Save PNG</button>
         <button id="quit-btn" type="button" class="ghost">Quit</button>
       </div>
     </div>
   </main>
 
-  <script src="app.js?v=aa7a5f7"></script>
+  <script src="app.js?v=b0943d5"></script>
 </body>
 </html>
