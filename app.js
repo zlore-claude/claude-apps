@@ -43,6 +43,14 @@
       icon: '🧭',
       comingSoon: true,
     },
+    {
+      slug: 'piplanning',
+      name: 'PI Planning',
+      meta: 'Agile',
+      tagline: 'Program increment planning board.',
+      icon: '🗓️',
+      url: 'apps/piplanning/',
+    },
   ];
 
   // Same morph + deep-link plumbing serves both grids; we look up by
