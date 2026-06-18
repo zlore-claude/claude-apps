@@ -410,6 +410,10 @@ document.getElementById('btn-add-card').addEventListener('click', () => {
   openCardModal(null, state.teams[0]?.id, null);
 });
 
+document.getElementById('btn-rte-cockpit').addEventListener('click', () => {
+  location.href = 'rte-cockpit/';
+});
+
 // ── Objective modal ───────────────────────────────────────────────────────────
 
 const objModalOverlay = document.getElementById('obj-modal-overlay');

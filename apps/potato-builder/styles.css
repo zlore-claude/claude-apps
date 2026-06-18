@@ -71,6 +71,8 @@ body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color
 .btn-ghost:hover { background: rgba(255,255,255,0.22); }
 .btn-danger { background: #fee2e2; color: #dc2626; }
 .btn-danger:hover { background: #fecaca; }
+.btn-cockpit { background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+.btn-cockpit:hover { background: rgba(255,255,255,0.28); }
 .btn-icon { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 13px; line-height: 1; border-radius: 3px; }
 .btn-icon:hover { background: rgba(0,0,0,0.08); }
 
