@@ -28,12 +28,12 @@
 
   const apps = [
     {
-      slug: 'piplanning',
-      name: 'PI Planning',
+      slug: 'sprintf',
+      name: 'Sprintf',
       meta: 'Dashboard',
       tagline: 'Plan program increments at scale.',
       icon: '▦',
-      url: 'apps/piplanning/',
+      url: 'apps/sprintf/',
     },
     {
       slug: 'noise-painter',
