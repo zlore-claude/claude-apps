@@ -411,7 +411,13 @@ document.getElementById('btn-add-card').addEventListener('click', () => {
 });
 
 document.getElementById('btn-rte-cockpit').addEventListener('click', () => {
-  location.href = 'rte-cockpit/';
+  // RTE Cockpit is its own tile. Inside the gallery shell, ask it to
+  // switch tiles; standalone, walk over to the sibling app directly.
+  if (window.self !== window.top) {
+    window.parent.postMessage({ type: 'open-game', slug: 'rte-cockpit' }, '*');
+  } else {
+    location.href = '../rte-cockpit/';
+  }
 });
 
 // ── Objective modal ───────────────────────────────────────────────────────────
