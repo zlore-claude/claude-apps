@@ -410,9 +410,178 @@ document.getElementById('btn-add-card').addEventListener('click', () => {
   openCardModal(null, state.teams[0]?.id, null);
 });
 
-document.getElementById('btn-rte-cockpit').addEventListener('click', () => {
-  location.href = 'rte-cockpit/';
+// ── View switching (board ↔ cockpit) ─────────────────────────────────────────
+
+const boardWrap     = document.getElementById('board-wrap');
+const cockpitWrap   = document.getElementById('cockpit-wrap');
+const boardActions  = document.getElementById('board-actions');
+const cockpitActions = document.getElementById('cockpit-actions');
+const headerLabel   = document.getElementById('header-label');
+
+function showCockpit() {
+  boardWrap.classList.add('hidden');
+  cockpitWrap.classList.remove('hidden');
+  boardActions.classList.add('hidden');
+  cockpitActions.classList.remove('hidden');
+  headerLabel.textContent = 'RTE';
+  renderCockpit();
+}
+
+function showBoard() {
+  cockpitWrap.classList.add('hidden');
+  boardWrap.classList.remove('hidden');
+  cockpitActions.classList.add('hidden');
+  boardActions.classList.remove('hidden');
+  headerLabel.textContent = 'PI';
+  render();
+}
+
+document.getElementById('btn-rte-cockpit').addEventListener('click', showCockpit);
+document.getElementById('btn-close-cockpit').addEventListener('click', showBoard);
+
+// ── RTE Cockpit ───────────────────────────────────────────────────────────────
+
+const ckPiInput    = document.getElementById('ck-pi-name');
+const ckSprintList = document.getElementById('ck-sprint-list');
+const ckTeamList   = document.getElementById('ck-team-list');
+
+function renderCockpit() {
+  ckPiInput.value = state.pi.name;
+  renderCkSprints();
+  renderCkTeams();
+}
+
+function renderCkSprints() {
+  ckSprintList.innerHTML = state.sprints.map((sp, i) =>
+    `<li class="ck-item" draggable="true" data-idx="${i}">
+      <span class="drag-handle">⠿</span>
+      <input class="ck-name-input" type="text" value="${escapeHTML(sp.name)}" data-sprint-id="${escapeHTML(sp.id)}" />
+      <button class="ck-delete" data-action="del-sprint" data-sprint-id="${escapeHTML(sp.id)}" title="Delete">🗑</button>
+    </li>`
+  ).join('');
+  bindCkDrag(ckSprintList, 'sprint');
+}
+
+function renderCkTeams() {
+  ckTeamList.innerHTML = state.teams.map((t, i) => {
+    const color = t.color || TEAM_COLORS[i % TEAM_COLORS.length];
+    return `<li class="ck-item" draggable="true" data-idx="${i}">
+      <span class="drag-handle">⠿</span>
+      <label class="color-swatch" style="background:${escapeHTML(color)}" title="Change color">
+        <input type="color" value="${escapeHTML(color)}" data-team-id="${escapeHTML(t.id)}" />
+      </label>
+      <input class="ck-name-input" type="text" value="${escapeHTML(t.name)}" data-team-id="${escapeHTML(t.id)}" />
+      <button class="ck-delete" data-action="del-team" data-team-id="${escapeHTML(t.id)}" title="Delete">🗑</button>
+    </li>`;
+  }).join('');
+  bindCkDrag(ckTeamList, 'team');
+}
+
+// PI name save
+document.getElementById('ck-btn-save-pi').addEventListener('click', () => {
+  const v = ckPiInput.value.trim();
+  if (!v) return;
+  state.pi.name = v;
+  document.getElementById('pi-name').textContent = v;
+  saveState();
 });
+ckPiInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('ck-btn-save-pi').click(); });
+
+// Sprint inline edits
+ckSprintList.addEventListener('change', e => {
+  const inp = e.target.closest('.ck-name-input[data-sprint-id]');
+  if (!inp) return;
+  const sp = state.sprints.find(s => s.id === inp.dataset.sprintId);
+  if (sp) { sp.name = inp.value.trim() || sp.name; saveState(); }
+});
+ckSprintList.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="del-sprint"]');
+  if (!btn) return;
+  if (!confirm('Delete sprint? Cards assigned to it move to the backlog.')) return;
+  const id = btn.dataset.sprintId;
+  state.sprints = state.sprints.filter(s => s.id !== id);
+  state.cards.forEach(c => { if (c.sprintId === id) c.sprintId = null; });
+  saveState(); renderCkSprints();
+});
+
+// Team inline edits
+ckTeamList.addEventListener('change', e => {
+  const nameInp = e.target.closest('.ck-name-input[data-team-id]');
+  if (nameInp) {
+    const t = state.teams.find(x => x.id === nameInp.dataset.teamId);
+    if (t) { t.name = nameInp.value.trim() || t.name; saveState(); }
+    return;
+  }
+  const colorInp = e.target.closest('input[type="color"][data-team-id]');
+  if (colorInp) {
+    const t = state.teams.find(x => x.id === colorInp.dataset.teamId);
+    if (t) { t.color = colorInp.value; colorInp.closest('.color-swatch').style.background = colorInp.value; saveState(); }
+  }
+});
+ckTeamList.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="del-team"]');
+  if (!btn) return;
+  if (!confirm('Delete team? All their cards and objectives will be removed.')) return;
+  const id = btn.dataset.teamId;
+  state.teams = state.teams.filter(t => t.id !== id);
+  state.cards = state.cards.filter(c => c.teamId !== id);
+  state.objectives = state.objectives.filter(o => o.teamId !== id);
+  saveState(); renderCkTeams();
+});
+
+// Add sprint
+document.getElementById('ck-btn-add-sprint').addEventListener('click', () => {
+  if (state.sprints.length >= 8) { alert('Maximum 8 sprints.'); return; }
+  const name = prompt('Sprint name:', `Sprint ${state.sprints.length + 1}`);
+  if (!name || !name.trim()) return;
+  state.sprints.push({ id: uid(), name: name.trim() });
+  saveState(); renderCkSprints();
+});
+
+// Add team
+document.getElementById('ck-btn-add-team').addEventListener('click', () => {
+  const name = prompt('Team name:');
+  if (!name || !name.trim()) return;
+  const idx = state.teams.length;
+  state.teams.push({ id: uid(), name: name.trim(), color: TEAM_COLORS[idx % TEAM_COLORS.length] });
+  saveState(); renderCkTeams();
+});
+
+// Reset
+document.getElementById('ck-btn-reset').addEventListener('click', () => {
+  if (!confirm('This will erase ALL board data and restore defaults. Are you sure?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+});
+
+// Drag-to-reorder
+let ckDragSrcIdx = null;
+let ckDragType = null;
+
+function bindCkDrag(list, type) {
+  list.querySelectorAll('.ck-item').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      ckDragSrcIdx = Number(row.dataset.idx);
+      ckDragType = type;
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragover', e => {
+      if (ckDragType !== type) return;
+      e.preventDefault(); row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); row.classList.remove('drag-over');
+      const dest = Number(row.dataset.idx);
+      if (ckDragSrcIdx === null || ckDragSrcIdx === dest) return;
+      const arr = type === 'sprint' ? state.sprints : state.teams;
+      const [moved] = arr.splice(ckDragSrcIdx, 1);
+      arr.splice(dest, 0, moved);
+      saveState();
+      if (type === 'sprint') renderCkSprints(); else renderCkTeams();
+    });
+  });
+}
 
 // ── Objective modal ───────────────────────────────────────────────────────────
 
