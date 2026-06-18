@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RTE Cockpit — Potato Builder</title>
+  <style>
+    #app-loading {
+      position: fixed; inset: 0; background: #1e3a5f; display: flex;
+      align-items: center; justify-content: center; z-index: 9999;
+      flex-direction: column; gap: 16px; font-family: system-ui, sans-serif;
+    }
+    #app-loading .logo { font-size: 48px; }
+    #app-loading p { color: #93c5fd; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=bf59661" />
+</head>
+<body>
+  <div id="app-loading">
+    <div class="logo">⚙️</div>
+    <p>Loading RTE Cockpit…</p>
+  </div>
+
+  <div id="app">
+    <header id="cockpit-header">
+      <button class="back-btn" id="back-btn">← Board</button>
+      <div class="header-title">
+        <span class="header-label">RTE</span>
+        <h1>Cockpit Settings</h1>
+      </div>
+      <div class="header-sub" id="header-pi-name"></div>
+    </header>
+
+    <main id="cockpit-main">
+
+      <!-- PI Config -->
+      <section class="section">
+        <div class="section-header">
+          <h2>Program Increment</h2>
+          <p>Name and configure the active PI.</p>
+        </div>
+        <div class="section-body">
+          <div class="field-row">
+            <label for="pi-name-input">PI Name</label>
+            <input id="pi-name-input" type="text" class="field-input" />
+            <button class="btn btn-primary" id="btn-save-pi">Save</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sprints -->
+      <section class="section">
+        <div class="section-header">
+          <h2>Sprints</h2>
+          <p>Rename or reorder sprints. Drag rows to reorder.</p>
+        </div>
+        <div class="section-body">
+          <ul class="item-list" id="sprint-list"></ul>
+          <button class="btn btn-add" id="btn-add-sprint">+ Add Sprint</button>
+        </div>
+      </section>
+
+      <!-- Teams -->
+      <section class="section">
+        <div class="section-header">
+          <h2>Teams</h2>
+          <p>Rename teams or change their accent color.</p>
+        </div>
+        <div class="section-body">
+          <ul class="item-list" id="team-list"></ul>
+          <button class="btn btn-add" id="btn-add-team">+ Add Team</button>
+        </div>
+      </section>
+
+      <!-- Danger zone -->
+      <section class="section section-danger">
+        <div class="section-header">
+          <h2>Danger Zone</h2>
+          <p>Irreversible actions — proceed with care.</p>
+        </div>
+        <div class="section-body">
+          <div class="danger-row">
+            <div>
+              <strong>Reset all board data</strong>
+              <p>Clears every card, objective, team, and sprint. Restores the default seed data.</p>
+            </div>
+            <button class="btn btn-danger" id="btn-reset">Reset board</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js?v=bf59661"></script>
+</body>
+</html>
