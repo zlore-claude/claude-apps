@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PI Planning</title>
+  <script>
+    if (window.self !== window.top) document.documentElement.classList.add('embedded');
+  </script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #f8f9fa; color: #1e293b;
+      font-family: ui-sans-serif, system-ui, sans-serif; }
+    #app-loading {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #1e293b;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 22px;
+      transition: opacity 0.4s ease;
+    }
+    #app-loading.hidden { opacity: 0; pointer-events: none; }
+    #app-loading .gl-icon { font-size: 88px; line-height: 1; }
+    #app-loading .gl-label { font-size: 18px; color: #94a3b8; letter-spacing: 0.05em; }
+    #app-loading .gl-bar {
+      position: relative; width: 180px; height: 4px;
+      background: rgba(255,255,255,0.10); overflow: hidden;
+    }
+    #app-loading .gl-bar::after {
+      content: ""; position: absolute; top: 0; left: -40%;
+      width: 40%; height: 100%; background: #2563eb;
+      animation: gl-bar 1.2s cubic-bezier(0.45,0,0.55,1) infinite;
+    }
+    @keyframes gl-bar { 0% { left: -40%; } 100% { left: 100%; } }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=157848c" />
+</head>
+<body>
+  <div id="app-loading">
+    <span class="gl-icon" aria-hidden="true">🗓️</span>
+    <div class="gl-label">PI Planning</div>
+    <div class="gl-bar" aria-label="Loading"></div>
+  </div>
+
+  <div id="app-root">
+    <header class="app-header">
+      <button class="back-btn" id="back-btn" type="button" aria-label="Back">&#8592; Back</button>
+      <div class="header-center">
+        <h1 class="pi-name" id="pi-name" title="Click to rename">PI 2026.2</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="add-team-btn" type="button">+ Team</button>
+        <button class="btn btn-secondary" id="add-sprint-btn" type="button">+ Sprint</button>
+        <button class="btn btn-primary" id="add-card-btn" type="button">+ Card</button>
+      </div>
+    </header>
+
+    <div class="board-outer">
+      <div class="board-scroll" id="board-scroll">
+        <table class="board-table" id="board-table">
+          <thead id="board-head"></thead>
+          <tbody id="board-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card modal -->
+  <div class="modal-overlay hidden" id="card-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Add Card</h2>
+        <button class="modal-close" id="modal-close" type="button" aria-label="Close">&#215;</button>
+      </div>
+      <form id="card-form" class="modal-body">
+        <input type="hidden" id="card-id" />
+        <label class="field">
+          <span class="field-label">Title</span>
+          <input type="text" id="card-title" class="field-input" placeholder="Card title" required />
+        </label>
+        <label class="field">
+          <span class="field-label">Type</span>
+          <select id="card-type" class="field-input">
+            <option value="Feature">Feature</option>
+            <option value="Story">Story</option>
+            <option value="Risk">Risk</option>
+            <option value="Enabler">Enabler</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Team</span>
+          <select id="card-team" class="field-input"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Sprint</span>
+          <select id="card-sprint" class="field-input"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Story Points</span>
+          <input type="number" id="card-points" class="field-input" min="0" max="100" placeholder="0" />
+        </label>
+        <label class="field">
+          <span class="field-label">Notes</span>
+          <textarea id="card-notes" class="field-input field-textarea" placeholder="Optional notes"></textarea>
+        </label>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="card-delete-btn">Delete</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Objective modal -->
+  <div class="modal-overlay hidden" id="obj-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="obj-modal-title">Add Objective</h2>
+        <button class="modal-close" id="obj-modal-close" type="button" aria-label="Close">&#215;</button>
+      </div>
+      <form id="obj-form" class="modal-body">
+        <input type="hidden" id="obj-id" />
+        <input type="hidden" id="obj-team-id" />
+        <label class="field">
+          <span class="field-label">Objective</span>
+          <input type="text" id="obj-title" class="field-input" placeholder="Objective title" required />
+        </label>
+        <label class="field">
+          <span class="field-label">Business Value (1-10)</span>
+          <input type="number" id="obj-bv" class="field-input" min="1" max="10" value="5" />
+        </label>
+        <label class="field field-checkbox">
+          <input type="checkbox" id="obj-stretch" />
+          <span class="field-label">Stretch objective</span>
+        </label>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="obj-delete-btn">Delete</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js?v=157848c"></script>
+</body>
+</html>
