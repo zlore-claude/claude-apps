@@ -4,13 +4,13 @@ if (window.self !== window.top) document.documentElement.classList.add('embedded
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'piplanning-state';
+const STORAGE_KEY = 'potato-builder-state';
 
 const TEAM_COLORS = ['#2563eb','#16a34a','#9333ea','#ea580c','#0891b2','#be185d'];
 
 function defaultState() {
   return {
-    pi: { name: 'PI 2026.2' },
+    pi: { name: 'Potato PI 1' },
     sprints: [
       { id: 's1', name: 'Sprint 1' },
       { id: 's2', name: 'Sprint 2' },
