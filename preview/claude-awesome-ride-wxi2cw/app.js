@@ -28,14 +28,6 @@
 
   const apps = [
     {
-      slug: 'potato-builder',
-      name: 'Potato Builder',
-      meta: 'SAFe ops',
-      tagline: 'Tune your RTE cockpit and ship the PI.',
-      icon: '🥔',
-      url: 'apps/potato-builder/',
-    },
-    {
       slug: 'noise-painter',
       name: 'Noise Painter',
       meta: 'Generative',
@@ -50,6 +42,14 @@
       tagline: 'Plot a route between two points.',
       icon: '🧭',
       comingSoon: true,
+    },
+    {
+      slug: 'potato-builder',
+      name: 'Potato Builder',
+      meta: 'Agile',
+      tagline: 'Program increment planning board.',
+      icon: '🗓️',
+      url: 'apps/potato-builder/',
     },
   ];
 
