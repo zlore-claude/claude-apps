@@ -26,24 +26,7 @@
     },
   ];
 
-  const apps = [
-    {
-      slug: 'noise-painter',
-      name: 'Noise Painter',
-      meta: 'Generative',
-      tagline: 'Regenerate infinite landscapes with one tap.',
-      icon: '🏔️',
-      url: 'apps/noise-painter/',
-    },
-    {
-      slug: 'directions',
-      name: 'Directions',
-      meta: 'Coming soon',
-      tagline: 'Plot a route between two points.',
-      icon: '🧭',
-      comingSoon: true,
-    },
-  ];
+  const apps = [];
 
   // Same morph + deep-link plumbing serves both grids; we look up by
   // url across the union so games/<slug> and apps/<slug> both work.
