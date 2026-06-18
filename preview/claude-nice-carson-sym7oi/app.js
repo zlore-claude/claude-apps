@@ -44,12 +44,12 @@
       comingSoon: true,
     },
     {
-      slug: 'piplanning',
-      name: 'PI Planning',
+      slug: 'potato-builder',
+      name: 'Potato Builder',
       meta: 'Agile',
       tagline: 'Program increment planning board.',
       icon: '🗓️',
-      url: 'apps/piplanning/',
+      url: 'apps/potato-builder/',
     },
   ];
 

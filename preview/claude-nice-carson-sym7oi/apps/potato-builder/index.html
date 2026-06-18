@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Potato Builder</title>
+  <style>
+    #app-loading {
+      position: fixed; inset: 0; background: #1e3a5f; display: flex;
+      align-items: center; justify-content: center; z-index: 9999;
+      flex-direction: column; gap: 16px; font-family: system-ui, sans-serif;
+    }
+    #app-loading .logo { font-size: 48px; }
+    #app-loading p { color: #93c5fd; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=400ec43" />
+</head>
+<body>
+  <div id="app-loading">
+    <div class="logo">🗓️</div>
+    <p>Loading Potato Builder…</p>
+  </div>
+
+  <div id="app">
+    <header id="app-header">
+      <button class="back-btn" id="back-btn" aria-label="Back">← Back</button>
+      <div class="header-left">
+        <span class="header-label">PI</span>
+        <span class="pi-name" id="pi-name" title="Click to rename" tabindex="0"></span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-add-team" class="btn btn-ghost">+ Team</button>
+        <button id="btn-add-sprint" class="btn btn-ghost">+ Sprint</button>
+        <button id="btn-add-card" class="btn btn-primary">+ Feature</button>
+      </div>
+    </header>
+
+    <div id="board-wrap">
+      <div id="board">
+        <!-- injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Card edit modal -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 id="modal-title">Edit Feature</h2>
+        <button id="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Title
+          <input type="text" id="field-title" placeholder="Feature title" />
+        </label>
+        <label>Type
+          <select id="field-type">
+            <option value="feature">Feature</option>
+            <option value="story">Story</option>
+            <option value="enabler">Enabler</option>
+            <option value="risk">Risk</option>
+          </select>
+        </label>
+        <label>Points
+          <input type="number" id="field-points" min="0" max="999" placeholder="—" />
+        </label>
+        <label>Notes
+          <textarea id="field-notes" rows="3" placeholder="Optional notes…"></textarea>
+        </label>
+        <label>Assign to team
+          <select id="field-team"></select>
+        </label>
+        <label>Sprint
+          <select id="field-sprint"></select>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-delete-card" class="btn btn-danger">Delete</button>
+        <div class="modal-footer-right">
+          <button id="btn-cancel-modal" class="btn btn-ghost">Cancel</button>
+          <button id="btn-save-card" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Objective edit modal -->
+  <div id="obj-modal-overlay" class="hidden">
+    <div id="obj-modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 id="obj-modal-title">Edit Objective</h2>
+        <button id="obj-modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Objective
+          <input type="text" id="obj-field-title" placeholder="PI Objective…" />
+        </label>
+        <label>Business Value (1–10)
+          <input type="number" id="obj-field-bv" min="1" max="10" value="5" />
+        </label>
+        <label class="label-inline">
+          <input type="checkbox" id="obj-field-stretch" />
+          Stretch objective
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button id="obj-btn-delete" class="btn btn-danger">Delete</button>
+        <div class="modal-footer-right">
+          <button id="obj-btn-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="obj-btn-save" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=400ec43"></script>
+</body>
+</html>
