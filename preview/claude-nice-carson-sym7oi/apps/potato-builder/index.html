@@ -13,7 +13,7 @@
     #app-loading .logo { font-size: 48px; }
     #app-loading p { color: #93c5fd; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=bf59661" />
+  <link rel="stylesheet" href="styles.css?v=5ed8414" />
 </head>
 <body>
   <div id="app-loading">
@@ -25,20 +25,81 @@
     <header id="app-header">
       <button class="back-btn" id="back-btn" aria-label="Back">← Back</button>
       <div class="header-left">
-        <span class="header-label">PI</span>
+        <span class="header-label" id="header-label">PI</span>
         <span class="pi-name" id="pi-name" title="Click to rename" tabindex="0"></span>
       </div>
-      <div class="header-actions">
+      <div class="header-actions" id="board-actions">
         <button id="btn-rte-cockpit" class="btn btn-cockpit">⚙ RTE Cockpit</button>
         <button id="btn-add-team" class="btn btn-ghost">+ Team</button>
         <button id="btn-add-sprint" class="btn btn-ghost">+ Sprint</button>
         <button id="btn-add-card" class="btn btn-primary">+ Feature</button>
       </div>
+      <div class="header-actions hidden" id="cockpit-actions">
+        <button id="btn-close-cockpit" class="btn btn-cockpit">← Board</button>
+      </div>
     </header>
 
+    <!-- Board view -->
     <div id="board-wrap">
-      <div id="board">
-        <!-- injected by JS -->
+      <div id="board"></div>
+    </div>
+
+    <!-- RTE Cockpit view -->
+    <div id="cockpit-wrap" class="hidden">
+      <div id="cockpit-main">
+
+        <section class="ck-section">
+          <div class="ck-section-header">
+            <h2>Program Increment</h2>
+            <p>Name the active PI.</p>
+          </div>
+          <div class="ck-section-body">
+            <div class="ck-field-row">
+              <label for="ck-pi-name">PI Name</label>
+              <input id="ck-pi-name" type="text" class="ck-input" />
+              <button class="btn btn-primary btn-sm" id="ck-btn-save-pi">Save</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="ck-section">
+          <div class="ck-section-header">
+            <h2>Sprints</h2>
+            <p>Rename, reorder (drag), or delete sprints.</p>
+          </div>
+          <div class="ck-section-body">
+            <ul class="ck-list" id="ck-sprint-list"></ul>
+            <button class="btn btn-add" id="ck-btn-add-sprint">+ Add Sprint</button>
+          </div>
+        </section>
+
+        <section class="ck-section">
+          <div class="ck-section-header">
+            <h2>Teams</h2>
+            <p>Rename teams, change accent color, or reorder.</p>
+          </div>
+          <div class="ck-section-body">
+            <ul class="ck-list" id="ck-team-list"></ul>
+            <button class="btn btn-add" id="ck-btn-add-team">+ Add Team</button>
+          </div>
+        </section>
+
+        <section class="ck-section ck-section-danger">
+          <div class="ck-section-header">
+            <h2>Danger Zone</h2>
+            <p>Irreversible — clears all board data and restores defaults.</p>
+          </div>
+          <div class="ck-section-body">
+            <div class="ck-danger-row">
+              <div>
+                <strong>Reset all board data</strong>
+                <p>Removes every card, objective, team, and sprint.</p>
+              </div>
+              <button class="btn btn-danger" id="ck-btn-reset">Reset board</button>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -114,6 +175,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=bf59661"></script>
+  <script src="app.js?v=5ed8414"></script>
 </body>
 </html>
