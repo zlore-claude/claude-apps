@@ -28,6 +28,14 @@
 
   const apps = [
     {
+      slug: 'piplanning',
+      name: 'PI Planning',
+      meta: 'Dashboard',
+      tagline: 'Plan program increments at scale.',
+      icon: '▦',
+      url: 'apps/piplanning/',
+    },
+    {
       slug: 'noise-painter',
       name: 'Noise Painter',
       meta: 'Generative',

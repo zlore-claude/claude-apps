@@ -65,6 +65,7 @@
   --tile-memory: #8b5cf6;       /* violet-500 */
 --tile-noise-painter: #5eead4; /* teal-300 */
 --tile-directions: #38bdf8;   /* sky-400 */
+--tile-piplanning: #18181b;   /* near-black brand */
 }
 
 /* Hide the in-game back link when the page is rendered inside the
