@@ -43,14 +43,6 @@
       icon: '🧭',
       comingSoon: true,
     },
-    {
-      slug: 'potato-builder',
-      name: 'Potato Builder',
-      meta: 'Agile',
-      tagline: 'Program increment planning board.',
-      icon: '🗓️',
-      url: 'apps/potato-builder/',
-    },
   ];
 
   // Same morph + deep-link plumbing serves both grids; we look up by
