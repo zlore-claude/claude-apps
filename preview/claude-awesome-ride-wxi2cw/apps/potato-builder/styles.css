@@ -277,6 +277,74 @@ body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color
 .modal-footer-right { display: flex; gap: 8px; }
 .btn-danger { border: none; }
 
+/* ── RTE Cockpit view ── */
+#cockpit-wrap {
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto; background: var(--bg);
+}
+#cockpit-main {
+  max-width: 720px; margin: 0 auto; padding: 32px 24px 64px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.ck-section {
+  background: var(--surface); border-radius: 10px;
+  border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow);
+}
+.ck-section-header { padding: 16px 24px 12px; border-bottom: 1px solid var(--border); }
+.ck-section-header h2 { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.ck-section-header p { font-size: 13px; color: var(--muted); }
+.ck-section-body { padding: 16px 24px 20px; }
+.ck-section-danger .ck-section-header h2 { color: #dc2626; }
+.ck-section-danger { border-color: #fecaca; }
+
+.ck-field-row { display: flex; align-items: center; gap: 10px; }
+.ck-field-row label { font-size: 13px; font-weight: 500; white-space: nowrap; min-width: 70px; }
+.ck-input {
+  flex: 1; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; font-size: 14px; color: var(--ink); outline: none;
+  transition: border-color 0.15s;
+}
+.ck-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-add {
+  background: none; color: var(--blue); border: 1px dashed #93c5fd;
+  width: 100%; margin-top: 10px; padding: 8px; border-radius: var(--radius);
+  cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s;
+}
+.btn-add:hover { background: var(--blue-light); }
+
+.ck-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.ck-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: #fafafa;
+}
+.ck-item.drag-over { outline: 2px dashed var(--blue); outline-offset: -2px; background: var(--blue-light); }
+.drag-handle { cursor: grab; color: #cbd5e1; font-size: 16px; line-height: 1; flex-shrink: 0; user-select: none; }
+.drag-handle:active { cursor: grabbing; }
+.ck-name-input {
+  flex: 1; border: none; background: transparent; font-size: 14px;
+  color: var(--ink); outline: none; padding: 0;
+}
+.ck-name-input:focus { color: var(--blue); }
+.color-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.12); cursor: pointer; flex-shrink: 0;
+  position: relative; overflow: hidden;
+}
+.color-swatch input[type="color"] {
+  position: absolute; inset: -4px; opacity: 0; cursor: pointer;
+  width: calc(100% + 8px); height: calc(100% + 8px);
+}
+.ck-delete {
+  background: none; border: none; cursor: pointer; padding: 3px 6px;
+  font-size: 14px; color: var(--muted); border-radius: 4px;
+}
+.ck-delete:hover { background: #fee2e2; color: #dc2626; }
+
+.ck-danger-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ck-danger-row p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
 /* ── Sprint header rename ── */
 .sprint-header-inner { display: flex; align-items: center; gap: 4px; }
 .sprint-rename-btn { opacity: 0; font-size: 10px; cursor: pointer; color: var(--muted); background: none; border: none; padding: 1px 3px; border-radius: 3px; transition: opacity 0.15s; }

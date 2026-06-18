@@ -28,14 +28,6 @@
 
   const apps = [
     {
-      slug: 'rte-cockpit',
-      name: 'RTE Cockpit',
-      meta: 'Settings',
-      tagline: 'Set the defaults every PI session inherits.',
-      icon: '🎛️',
-      url: 'apps/rte-cockpit/',
-    },
-    {
       slug: 'noise-painter',
       name: 'Noise Painter',
       meta: 'Generative',
@@ -86,8 +78,6 @@
   let lastCard = null;
   let lastCardRect = null;
   let lastGame = null;
-  // Tile queued to open after a switch-driven close finishes animating.
-  let pendingOpen = null;
 
   function escapeHTML(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
@@ -265,14 +255,6 @@
     lastCard = null;
     lastCardRect = null;
     lastGame = null;
-
-    // A switch (open-game) requested this close — open the target now
-    // that the overlay state is fully cleared.
-    if (pendingOpen) {
-      const next = pendingOpen;
-      pendingOpen = null;
-      nextFrame(() => openGame(null, next));
-    }
   }
 
   function onGridClick(e) {
@@ -309,30 +291,11 @@
     }
   });
 
-  // Jump to another tile by slug. If an experience is already open (e.g.
-  // the Potato Builder board navigating to its RTE Cockpit), close it
-  // first and reopen the target once the morph settles.
-  function switchToSlug(slug) {
-    const tile = tiles.find((t) => t.slug === slug && !t.comingSoon && t.url);
-    if (!tile) return;
-    if (overlay.dataset.state === 'open') {
-      pendingOpen = tile;
-      closeGame();
-    } else if (!overlay.dataset.state) {
-      openGame(null, tile);
-    }
-  }
-
-  // Allow embedded experiences to request close or cross-app navigation.
-  // Quit buttons post { type: 'close-game' }; a top-nav link to another
-  // tile posts { type: 'open-game', slug: '<slug>' }.
+  // Allow embedded games to request close (their Quit button posts this).
   window.addEventListener('message', (e) => {
-    if (!e.data) return;
-    if (e.data.type === 'close-game') {
+    if (e.data && e.data.type === 'close-game') {
       if (history.state && history.state.gameOpen) history.back();
       else closeGame();
-    } else if (e.data.type === 'open-game' && typeof e.data.slug === 'string') {
-      switchToSlug(e.data.slug);
     }
   });
 
