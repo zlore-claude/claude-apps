@@ -47,7 +47,7 @@
       slug: 'piplanning',
       name: 'PI Planning',
       meta: 'Agile',
-      tagline: 'Program increment planning board',
+      tagline: 'Program increment planning board.',
       icon: '🗓️',
       url: 'apps/piplanning/',
     },
