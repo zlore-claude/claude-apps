@@ -2,6 +2,7 @@
   'use strict';
 
   const STORE_KEY = 'pie-pi-planning-v1';
+  const ARTS_V = 2; // bump to regenerate the sample ARTs on existing saved plans
   const KINDS = ['story', 'feature', 'enabler', 'milestone'];
   // Default card-type palette mirrors the CSS :root fallbacks.
   const KIND_DEFAULTS = {
@@ -88,11 +89,22 @@
     }
     return { id: uid(), name, teams, artObjectives: genArtObjectives() };
   }
+  // Build an ART from an explicit per-team objective count (0 = team with none).
+  function genArtFromCounts(name, teamStart, counts) {
+    const teams = counts.map((c, i) => ({
+      id: uid(), name: TEAM_POOL[(teamStart + i) % TEAM_POOL.length], capacity: 20,
+      objectives: genObjectives(c, teamStart + i + 1),
+    }));
+    return { id: uid(), name, teams, artObjectives: genArtObjectives() };
+  }
   function genArts() {
     return [
       genArt('Digital Experience ART', 0, 10, 40),
       genArt('Payments ART', 10, 10, 60),
       genArt('Mobile Platform ART', 20, 10, 90),
+      genArtFromCounts('Data Platform ART', 4, [6]),
+      genArtFromCounts('Growth ART', 12, [5, 0, 4, 0, 6, 3, 0, 5, 0, 2]),
+      genArtFromCounts('Innovation ART', 24, [0, 0, 0]),
     ];
   }
 
@@ -170,7 +182,7 @@
     if (!Array.isArray(s.objectives)) s.objectives = [];
     s.teams.forEach((tm, i) => { if (!Array.isArray(tm.objectives)) tm.objectives = genTeamObjectives(i); });
     if (!Array.isArray(s.artObjectives)) s.artObjectives = genArtObjectives();
-    if (!Array.isArray(s.arts) || !s.arts.length) s.arts = genArts();
+    if (!Array.isArray(s.arts) || !s.arts.length || s.artsV !== ARTS_V) { s.arts = genArts(); s.artsV = ARTS_V; }
     if (typeof s.activeArt !== 'number' || s.activeArt < 0 || s.activeArt >= s.arts.length) s.activeArt = 0;
     s.context = Object.assign({ board: 'Team Board', program: 'Terra', team: 'Zürich', dates: '13 Jan - 13 Feb' }, s.context);
     // Shell / dashboard data (illustrative — distinct from the reference app)
@@ -484,14 +496,16 @@
       '<span class="ob-lk">' + bIcon('collab', 'op-lkico') + ' ' + o.links + '</span></div></div>';
   }
   function objGroup(label, list) {
+    if (!list.length) return '';
     return '<div class="ob-grp"><span>' + label + '</span><span class="ob-n">' + list.length + '</span></div>' +
       list.map(objRow).join('');
   }
   function teamBlock(tm) {
     const objs = tm.objectives || [];
+    const head = '<div class="ob-head"><span class="ob-mark" style="background:' + teamColor(tm) + '"></span>' + esc(tm.name) + '</div>';
+    if (!objs.length) return '<section class="obj-block">' + head + '<div class="ob-empty">No objectives</div></section>';
     const com = objs.filter((o) => o.committed), unc = objs.filter((o) => !o.committed);
-    return '<section class="obj-block"><div class="ob-head">' +
-      '<span class="ob-mark" style="background:' + teamColor(tm) + '"></span>' + esc(tm.name) + '</div>' +
+    return '<section class="obj-block">' + head +
       objGroup('Committed', com) + objGroup('Uncommitted', unc) + '</section>';
   }
   function estBlock(tm) {
@@ -521,19 +535,25 @@
     canvas.style.width = boardW + 'px';
     canvas.style.height = 'auto';
     // Find the fewest columns whose laid-out height fits the viewport; more
-    // objectives -> more columns to flatten the board so it fills the width
-    // before we have to scale down. If nothing fits, keep the shortest layout
-    // and let the whole board scale down so everything stays visible.
-    const maxCols = Math.max(3, Math.min(teams.length, Math.floor(availW / 150) || 3));
-    let bestN = 3, bestH = Infinity, fitN = 0;
-    for (let n = 3; n <= maxCols; n++) {
+    // objectives -> more columns to flatten the board. If it fits, stretch the
+    // board to the full viewport so width AND height are filled. If nothing
+    // fits, keep the shortest layout and let the whole board scale down so
+    // everything stays visible.
+    const minCols = Math.min(teams.length, 3) || 1;
+    const maxCols = Math.max(minCols, Math.min(teams.length, Math.floor(availW / 150) || 1));
+    let bestN = minCols, bestH = Infinity, fitN = 0;
+    for (let n = minCols; n <= maxCols; n++) {
       canvas.innerHTML = objSheetHtml(packTeams(teams, n), n);
       const h = canvas.firstChild.scrollHeight;
       if (h < bestH) { bestH = h; bestN = n; }
-      if (h <= availH) { fitN = n; bestH = h; break; }
+      if (h <= availH) { fitN = n; break; }
     }
-    if (!fitN && bestN !== maxCols) canvas.innerHTML = objSheetHtml(packTeams(teams, bestN), bestN);
-    boardH = bestH;
+    if (fitN) {
+      boardH = availH; // fits -> fill the viewport height
+    } else {
+      if (bestN !== maxCols) canvas.innerHTML = objSheetHtml(packTeams(teams, bestN), bestN);
+      boardH = bestH; // too dense -> scale the whole board down
+    }
     canvas.style.height = boardH + 'px';
   }
 
