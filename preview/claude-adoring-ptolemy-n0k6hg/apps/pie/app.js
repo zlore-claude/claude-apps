@@ -51,6 +51,51 @@
     return ART_OBJ.map((o, i) => ({ id: uid(), title: o.title, desc: o.desc, bv: 0, links: [7, 5, 5, 5, 3][i] || 4, committed: i < 3 }));
   }
 
+  // ---------- Multiple ARTs (for the ART Objectives board switcher) ----------
+  const TEAM_POOL = [
+    'Falcon', 'Otter', 'Nimbus', 'Pangolin', 'Marlin', 'Comet', 'Bison', 'Heron', 'Lynx', 'Orca',
+    'Raven', 'Cobra', 'Ibis', 'Puma', 'Wren', 'Yak', 'Tapir', 'Quail', 'Dingo', 'Civet',
+    'Egret', 'Gecko', 'Shrike', 'Vole', 'Stoat', 'Finch', 'Krill', 'Lark', 'Mako', 'Sable',
+  ];
+  // Split `total` objectives across `n` teams (each ≥1) with some variance but an exact sum.
+  function distribute(total, n) {
+    const w = [3, 5, 4, 6, 2, 5, 3, 6, 4, 2];
+    const sw = w.reduce((a, b) => a + b, 0);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(Math.max(1, Math.round(total * w[i % w.length] / sw)));
+    let diff = total - out.reduce((a, b) => a + b, 0), i = 0;
+    while (diff !== 0) {
+      const j = i % n;
+      if (diff > 0) { out[j]++; diff--; } else if (out[j] > 1) { out[j]--; diff++; }
+      i++;
+    }
+    return out;
+  }
+  function genObjectives(count, seed) {
+    const bvs = [8, 10, 13, 5, 20, 3];
+    const committed = Math.round(count * 0.6);
+    const out = [];
+    for (let k = 0; k < count; k++) {
+      out.push({ id: uid(), text: OBJ_POOL[(seed + k) % OBJ_POOL.length], bv: bvs[(seed + k) % bvs.length], links: 1 + ((seed + k) % 5), committed: k < committed });
+    }
+    return out;
+  }
+  function genArt(name, teamStart, teamCount, totalObj) {
+    const counts = distribute(totalObj, teamCount);
+    const teams = [];
+    for (let i = 0; i < teamCount; i++) {
+      teams.push({ id: uid(), name: TEAM_POOL[(teamStart + i) % TEAM_POOL.length], capacity: 20, objectives: genObjectives(counts[i], teamStart + i + 1) });
+    }
+    return { id: uid(), name, teams, artObjectives: genArtObjectives() };
+  }
+  function genArts() {
+    return [
+      genArt('Digital Experience ART', 0, 10, 40),
+      genArt('Payments ART', 10, 10, 60),
+      genArt('Mobile Platform ART', 20, 10, 90),
+    ];
+  }
+
   // ---------- DOM ----------
   const loading = document.getElementById('app-loading');
   const shell = document.getElementById('shell');
@@ -125,6 +170,8 @@
     if (!Array.isArray(s.objectives)) s.objectives = [];
     s.teams.forEach((tm, i) => { if (!Array.isArray(tm.objectives)) tm.objectives = genTeamObjectives(i); });
     if (!Array.isArray(s.artObjectives)) s.artObjectives = genArtObjectives();
+    if (!Array.isArray(s.arts) || !s.arts.length) s.arts = genArts();
+    if (typeof s.activeArt !== 'number' || s.activeArt < 0 || s.activeArt >= s.arts.length) s.activeArt = 0;
     s.context = Object.assign({ board: 'Team Board', program: 'Terra', team: 'Zürich', dates: '13 Jan - 13 Feb' }, s.context);
     // Shell / dashboard data (illustrative — distinct from the reference app)
     s.plan = Object.assign({ name: 'Team', teamLimit: 60, renews: '92d' }, s.plan);
@@ -254,9 +301,20 @@
         '<button class="bn-ico bn-home" type="button" data-nav="home" title="Dashboard">' + bIcon('apps') + '</button>' +
         '<button class="bn-chip" type="button" data-nav="toggle-art">' + bIcon('objectives', 'bn-cico') +
           '<span>' + (objPanelOpen ? 'Hide' : 'Show') + ' ART Objectives</span></button>';
+      const art = activeArt();
+      const objCount = (a) => a.teams.reduce((n, t) => n + (t.objectives ? t.objectives.length : 0), 0);
+      const items = state.arts.map((a, i) =>
+        '<button class="bn-mi' + (i === state.activeArt ? ' on' : '') + '" type="button" data-art="' + i + '">' +
+          '<span class="bn-mi-name">' + esc(a.name) + '</span>' +
+          '<small>' + a.teams.length + ' teams · ' + objCount(a) + ' objectives</small></button>').join('');
       center =
-        '<button class="bn-ico" type="button" title="Layout" disabled>' + bIcon('view') + '</button>' +
-        '<span class="bn-here">' + bIcon('objectives', 'bn-cico') + '<span>ART Objectives</span></span>';
+        '<span class="bn-here">' + bIcon('objectives', 'bn-cico') + '<span>ART Objectives</span></span>' +
+        '<div class="bn-artsel">' +
+          '<button class="bn-chip" type="button" data-nav="art-menu" aria-haspopup="true" aria-expanded="' + (artMenuOpen ? 'true' : 'false') + '">' +
+            bIcon('people', 'bn-cico') + '<span>' + esc(art.name) + '</span>' + bIcon('chev', 'bn-chev') + '</button>' +
+          '<div class="bn-menu"' + (artMenuOpen ? '' : ' hidden') + '>' +
+            '<div class="bn-menu-h">Change teams</div>' + items + '</div>' +
+        '</div>';
     } else {
       left =
         '<button class="bn-ico bn-home" type="button" data-nav="home" title="Dashboard">' + bIcon('apps') + '</button>' +
@@ -285,6 +343,7 @@
   // ---------- Floating side rail (static) ----------
   let railActive = 'team';
   let railRight = false; // user's left/right preference (forced right on ART Objectives)
+  let artMenuOpen = false; // ART switcher dropdown (ART Objectives board)
   function renderSideRail() {
     const forceRight = railActive === 'objectives' && objPanelOpen;
     srail.classList.toggle('srail--right', forceRight || railRight);
@@ -414,8 +473,9 @@
   // ART Objectives: team blocks in a balanced masonry (shortest column first)
   // Distinct per-team colors so you can still tell which team is which.
   const TEAM_COLORS = ['#e0746a', '#5b86d8', '#3fb98e', '#caa15a', '#9b7ef0', '#e06aa8', '#46b1b1', '#d2884a'];
+  function activeArt() { return state.arts[state.activeArt] || state.arts[0]; }
   function teamColor(tm) {
-    const i = state.teams.indexOf(tm);
+    const i = activeArt().teams.indexOf(tm);
     return TEAM_COLORS[(i < 0 ? 0 : i) % TEAM_COLORS.length];
   }
   function objRow(o, i) {
@@ -441,7 +501,7 @@
   function renderObjectivesBoard() {
     const COLS = 3;
     const cols = [[], [], []], colH = [0, 0, 0];
-    state.teams.forEach((tm) => {
+    activeArt().teams.forEach((tm) => {
       const ci = colH.indexOf(Math.min.apply(null, colH));
       cols[ci].push(tm); colH[ci] += estBlock(tm);
     });
@@ -471,7 +531,7 @@
   let objPanelOpen = true;
   function renderArtSide() {
     if (railActive !== 'objectives') { artSide.innerHTML = ''; return; }
-    const list = state.artObjectives;
+    const list = activeArt().artObjectives || [];
     const com = list.filter((o) => o.committed), unc = list.filter((o) => !o.committed);
     const card = (o, i) =>
       '<div class="as-card"><div class="as-top"><span class="as-num">' + (i + 1) + '</span>' +
@@ -485,7 +545,7 @@
       '<div class="as-grp"><span>' + label + '</span><span class="as-n">' + arr.length + '</span></div>' +
       arr.map(card).join('');
     artSide.innerHTML =
-      '<div class="as-head"><span class="as-art">' + esc(state.artName) + '</span>' +
+      '<div class="as-head"><span class="as-art">' + esc(activeArt().name) + '</span>' +
         '<button class="as-add" type="button" title="Add objective" disabled>' + bIcon('plus') + '</button></div>' +
       '<div class="as-body">' + grp('Commited', com) + grp('Uncommitted', unc) + '</div>';
   }
@@ -581,10 +641,22 @@
     railActive = v; renderBoardView();
   });
   bnav.addEventListener('click', (e) => {
+    const pick = e.target.closest('[data-art]');
+    if (pick) {
+      const i = +pick.dataset.art;
+      artMenuOpen = false;
+      if (i !== state.activeArt) { state.activeArt = i; save(); renderBoardView(); }
+      else renderTopNav();
+      return;
+    }
     const b = e.target.closest('[data-nav]'); if (!b) return;
     const nav = b.dataset.nav;
     if (nav === 'home') exitBoard();
     else if (nav === 'toggle-art') { objPanelOpen = !objPanelOpen; renderBoardView(); }
+    else if (nav === 'art-menu') { e.stopPropagation(); artMenuOpen = !artMenuOpen; renderTopNav(); }
+  });
+  document.addEventListener('click', (e) => {
+    if (artMenuOpen && !e.target.closest('.bn-artsel')) { artMenuOpen = false; renderTopNav(); }
   });
   zoomctl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-z]'); if (!b) return;
@@ -1013,7 +1085,7 @@
 
   // ---------- Global ----------
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeUserMenu();
+    if (e.key === 'Escape') { closeUserMenu(); if (artMenuOpen) { artMenuOpen = false; renderTopNav(); } }
   });
 
   function fullRender() {
