@@ -660,6 +660,11 @@
     if (window.self !== window.top) window.parent.postMessage({ type: 'close-game' }, '*');
     else location.href = '../../';
   }
+  function lockWorkspace() {
+    closeUserMenu();
+    try { localStorage.removeItem(GATE_KEY); sessionStorage.removeItem(GATE_KEY); } catch (_) {}
+    location.reload();
+  }
 
   // ---------- Light shell: sidebar + routed pages ----------
   let currentPage = 'home';
@@ -710,6 +715,7 @@
           '<div class="menu" id="user-menu" role="menu" hidden>' +
             '<button class="menu-item" type="button" data-act="settings"><span>⚙</span> Settings</button>' +
             '<button class="menu-item" type="button" data-act="export"><span>⤓</span> Export plan</button>' +
+            '<button class="menu-item" type="button" data-act="lock"><span>🔒</span> Lock workspace</button>' +
             '<div class="menu-sep"></div>' +
             '<button class="menu-item danger" type="button" data-act="quit"><span>⤴</span> Exit to arcade</button>' +
           '</div>' +
@@ -728,6 +734,7 @@
     else if (a === 'user-menu') { e.stopPropagation(); const m = document.getElementById('user-menu'); m.hidden = !m.hidden; }
     else if (a === 'settings') { closeUserMenu(); navigate('settings'); }
     else if (a === 'export') { closeUserMenu(); exportPlan(); }
+    else if (a === 'lock') lockWorkspace();
     else if (a === 'quit') quit();
   });
   document.addEventListener('click', (e) => { if (!e.target.closest('.user-chip-wrap')) closeUserMenu(); });
@@ -1009,16 +1016,83 @@
     if (!boardScreen.hidden) renderBoardView();
   }
 
+  // ---------- Private gate (client-side lock screen) ----------
+  // NOTE: this is a deterrent, not real security. A static site ships its JS to
+  // the browser, so a determined person can read the source and bypass it. For
+  // real privacy you'd need a server with auth.
+  //
+  // The password is stored as a SHA-256 hash so the plaintext isn't in source.
+  // To change it: run in any console →
+  //   crypto.subtle.digest('SHA-256', new TextEncoder().encode('your-pass'))
+  //     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+  // and paste the result below. Default password: "pieplanning".
+  const GATE_KEY = 'pie-unlocked-v1';
+  const PASS_HASH = '958b5f755b62780660dee88f3d468c225dda13366183632f29e435e5a7ae0e4b';
+
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  function gateToken() {
+    try { return localStorage.getItem(GATE_KEY) || sessionStorage.getItem(GATE_KEY); } catch (_) { return null; }
+  }
+  function isUnlocked() { return gateToken() === PASS_HASH; }
+
+  function showGate(onUnlock) {
+    loading.classList.add('hidden');
+    const gate = el('div', { class: 'gate', id: 'pie-gate' });
+    gate.innerHTML =
+      '<form class="gate-card" autocomplete="off">' +
+        '<div class="gate-ic">🥧</div>' +
+        '<h1 class="gate-h">Pie is private</h1>' +
+        '<p class="gate-sub">Enter the password to open this planning workspace.</p>' +
+        '<input class="gate-input" id="gate-pass" type="password" placeholder="Password" ' +
+          'autocomplete="current-password" aria-label="Password" />' +
+        '<div class="gate-err" id="gate-err" hidden>Incorrect password. Try again.</div>' +
+        '<label class="gate-remember"><input type="checkbox" id="gate-keep" checked />' +
+          '<span>Keep me unlocked on this device</span></label>' +
+        '<button class="gate-btn" type="submit">Unlock</button>' +
+      '</form>';
+    document.body.appendChild(gate);
+    const form = gate.querySelector('form');
+    const input = gate.querySelector('#gate-pass');
+    const err = gate.querySelector('#gate-err');
+    const keep = gate.querySelector('#gate-keep');
+    setTimeout(() => input.focus(), 50);
+    input.addEventListener('input', () => { err.hidden = true; });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = (await sha256(input.value)) === PASS_HASH;
+      if (!ok) {
+        err.hidden = false;
+        gate.querySelector('.gate-card').classList.remove('shake');
+        void gate.offsetWidth;
+        gate.querySelector('.gate-card').classList.add('shake');
+        input.select();
+        return;
+      }
+      try { (keep.checked ? localStorage : sessionStorage).setItem(GATE_KEY, PASS_HASH); } catch (_) {}
+      gate.classList.add('gate-out');
+      setTimeout(() => { gate.remove(); }, 280);
+      onUnlock();
+    });
+  }
+
   // ---------- Boot ----------
-  fullRender();
-  shell.hidden = false;
-  boardScreen.hidden = true;
+  function boot() {
+    fullRender();
+    shell.hidden = false;
+    boardScreen.hidden = true;
+    if (document.readyState === 'complete') reveal();
+    else window.addEventListener('load', reveal);
+  }
 
   const startTime = Date.now();
   function reveal() {
     const delay = Math.max(0, 3000 - (Date.now() - startTime));
     setTimeout(() => { loading.classList.add('hidden'); }, delay);
   }
-  if (document.readyState === 'complete') reveal();
-  else window.addEventListener('load', reveal);
+
+  if (isUnlocked()) boot();
+  else showGate(boot);
 })();
