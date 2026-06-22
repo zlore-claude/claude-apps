@@ -692,7 +692,11 @@
     const b = e.target.closest('[data-nav]'); if (!b) return;
     const nav = b.dataset.nav;
     if (nav === 'home') exitBoard();
-    else if (nav === 'toggle-art') { objPanelOpen = !objPanelOpen; renderBoardView(); }
+    else if (nav === 'toggle-art') {
+      const zoomed = view.scale > fitScale() * 1.01; // keep the user's zoom if they zoomed in
+      objPanelOpen = !objPanelOpen;
+      renderBoardView(zoomed);
+    }
     else if (nav === 'art-menu') { e.stopPropagation(); artMenuOpen = !artMenuOpen; renderTopNav(); }
   });
   document.addEventListener('click', (e) => {
@@ -706,15 +710,23 @@
     else if (z === 'fit') fitView();
   });
 
-  function renderBoardView() {
+  function renderBoardView(preserveView) {
     boardScreen.classList.toggle('obj-mode', railActive === 'objectives');
     boardScreen.classList.toggle('obj-open', railActive === 'objectives' && objPanelOpen);
     renderTopNav();
     renderSideRail();
     renderArtSide();
     renderZoomCtl();
-    renderCanvas();
-    fitView();
+    if (preserveView) {
+      // Panel toggled while zoomed in: keep the current zoom/pan, just re-clamp
+      // to the resized viewport instead of re-fitting (which would reset zoom).
+      measureInsets();
+      clampView();
+      applyView();
+    } else {
+      renderCanvas();
+      fitView();
+    }
   }
 
   // ---------- Theming (driven by PIE Recipe) ----------
