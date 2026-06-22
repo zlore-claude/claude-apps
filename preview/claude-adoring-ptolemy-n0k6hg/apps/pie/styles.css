@@ -755,3 +755,49 @@ body {
 
 /* hide quit when standalone-embedded handled in JS; back-link style parity */
 .embedded #standalone-only { display: none; }
+
+/* ---------- Private gate (lock screen) ---------- */
+.gate {
+  position: fixed; inset: 0; z-index: 9998;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(245,158,11,.10), transparent 60%),
+    #eef0f4;
+  transition: opacity .28s ease;
+}
+.gate.gate-out { opacity: 0; pointer-events: none; }
+.gate-card {
+  width: 100%; max-width: 360px; box-sizing: border-box;
+  background: #fff; border: 1px solid #e6e8ee; border-radius: 18px;
+  padding: 30px 28px 26px; text-align: center;
+  box-shadow: 0 20px 60px rgba(20,30,50,.16);
+}
+.gate-card.shake { animation: gate-shake .34s cubic-bezier(.36,.07,.19,.97); }
+@keyframes gate-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+.gate-ic { font-size: 46px; line-height: 1; }
+.gate-h { margin: 12px 0 4px; font-size: 20px; font-weight: 800; color: #1b1f27; }
+.gate-sub { margin: 0 0 18px; font-size: 13.5px; color: #5f6775; }
+.gate-input {
+  width: 100%; box-sizing: border-box; height: 44px; padding: 0 14px;
+  border: 1px solid #d8dce4; border-radius: 11px; background: #fbfbfd;
+  font: inherit; font-size: 15px; color: #1b1f27; outline: none;
+}
+.gate-input:focus { border-color: var(--accent, #f59e0b); box-shadow: 0 0 0 3px var(--accent-soft, rgba(245,158,11,.16)); }
+.gate-err { margin-top: 10px; font-size: 12.5px; font-weight: 600; color: #d23f3f; }
+.gate-remember {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  margin: 16px 0 18px; font-size: 12.5px; color: #5f6775; cursor: pointer;
+}
+.gate-remember input { width: 15px; height: 15px; accent-color: var(--accent, #f59e0b); cursor: pointer; }
+.gate-btn {
+  width: 100%; height: 44px; border: 0; border-radius: 11px; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent, #f59e0b), #c2740a); color: #1a1205;
+  font: inherit; font-size: 15px; font-weight: 800;
+}
+.gate-btn:hover { filter: brightness(1.05); }
+.gate-btn:active { transform: translateY(1px); }
