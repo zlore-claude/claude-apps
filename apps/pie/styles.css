@@ -203,6 +203,26 @@ body {
 .bn-here { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 6px; font-weight: 700; font-size: 14px; }
 .bn-here .bn-cico { stroke: #1b1f27; }
 
+/* ART switcher (change teams) */
+.bn-artsel { position: relative; }
+.bn-artsel .bn-chip[aria-expanded="true"] { border-color: var(--accent, #f59e0b); }
+.bn-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 260px;
+  background: #fff; border: 1px solid var(--r-line); border-radius: 12px; padding: 6px;
+  box-shadow: 0 14px 38px rgba(20,30,50,.18);
+}
+.bn-menu[hidden] { display: none; }
+.bn-menu-h { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #9aa1ad; padding: 6px 10px 4px; }
+.bn-mi {
+  display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+  padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font: inherit;
+}
+.bn-mi:hover { background: #f1f2f6; }
+.bn-mi.on { background: var(--accent-soft, rgba(245,158,11,.16)); }
+.bn-mi-name { font-size: 13.5px; font-weight: 700; color: #1b1f27; }
+.bn-mi small { font-size: 11.5px; color: var(--r-dim); }
+.bn-mi.on .bn-mi-name { color: #1b1f27; }
+
 .art-side { display: none; }
 .board-screen.obj-mode.obj-open .art-side {
   display: flex; flex-direction: column; position: absolute; top: 56px; bottom: 0; left: 0; width: 474px; z-index: 30;
