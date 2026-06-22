@@ -498,22 +498,33 @@
     const objs = tm.objectives || [];
     return 56 + 2 * 34 + objs.length * 78; // header + 2 group labels + items
   }
-  function renderObjectivesBoard() {
-    const COLS = 3;
-    const cols = [[], [], []], colH = [0, 0, 0];
-    activeArt().teams.forEach((tm) => {
-      const ci = colH.indexOf(Math.min.apply(null, colH));
-      cols[ci].push(tm); colH[ci] += estBlock(tm);
+  // Balanced shortest-column-first packing of the teams into N columns.
+  function packTeams(teams, n) {
+    const cols = Array.from({ length: n }, () => []);
+    const h = new Array(n).fill(0);
+    teams.forEach((tm) => {
+      const ci = h.indexOf(Math.min.apply(null, h));
+      cols[ci].push(tm); h[ci] += estBlock(tm);
     });
+    return { cols, maxH: Math.max.apply(null, h) };
+  }
+  const OBJ_COL_W = 320; // target readable column width
+  function renderObjectivesBoard() {
+    const teams = activeArt().teams;
     const availW = canvasWrap.clientWidth - hpad.l - hpad.r;
     const availH = canvasWrap.clientHeight - 2 * PAD;
+    // Columns sized for readability fill the full width; the board stretches to
+    // at least the viewport height (so 100% fills width AND height with
+    // padding) and grows taller for dense ARTs, which then pan vertically.
+    const n = Math.max(3, Math.min(teams.length, Math.round(availW / OBJ_COL_W)));
+    const packed = packTeams(teams, n);
     boardW = availW;
     canvas.style.width = boardW + 'px';
     canvas.style.height = 'auto';
-    canvas.innerHTML = '<div class="obj-sheet">' + cols.map((teams, ci) =>
-      '<div class="obj-col' + (ci === COLS - 1 ? ' last-col' : '') + '">' +
-      teams.map(teamBlock).join('') + '</div>').join('') + '</div>';
-    boardH = Math.max(canvas.firstChild.scrollHeight, availH);
+    canvas.innerHTML = '<div class="obj-sheet">' + packed.cols.map((ct, ci) =>
+      '<div class="obj-col' + (ci === n - 1 ? ' last-col' : '') + '">' +
+      ct.map(teamBlock).join('') + '</div>').join('') + '</div>';
+    boardH = Math.max(availH, canvas.firstChild.scrollHeight);
     canvas.style.height = boardH + 'px';
   }
 
@@ -570,14 +581,10 @@
   function clampN(v, a, b) { return Math.min(b, Math.max(a, v)); }
   function fitScale() {
     if (!boardW) return 1;
-    // Fit to whichever dimension is the binding constraint so 100% shows the
-    // whole board. Most boards are sized to the viewport (so width wins), but
-    // the ART Objectives board can be taller than the viewport — there height
-    // is what has to fit.
-    const sx = (canvasWrap.clientWidth - hpad.l - hpad.r) / boardW;
-    if (!boardH) return sx;
-    const sy = (canvasWrap.clientHeight - PAD * 2) / boardH;
-    return Math.min(sx, sy);
+    // 100% = the board filling the viewport width (with padding). Boards are
+    // sized to be at least viewport-tall, so this also fills the height; denser
+    // boards extend below and pan vertically.
+    return (canvasWrap.clientWidth - hpad.l - hpad.r) / boardW;
   }
   function clampView() {
     const vw = canvasWrap.clientWidth, vh = canvasWrap.clientHeight, P = PAD;
