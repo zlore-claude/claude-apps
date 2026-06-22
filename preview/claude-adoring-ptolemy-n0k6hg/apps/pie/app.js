@@ -412,24 +412,43 @@
   }
 
   // ART Objectives: team blocks in a balanced masonry (shortest column first)
-  function objRow(o, i) {
-    return '<div class="ob-item"><div class="ob-t"><b>' + (i + 1) + '</b> ' + esc(o.text) + '</div>' +
-      '<div class="ob-meta"><span class="ob-bv">' + o.bv + ' BV</span>' +
-      '<span class="ob-lk">' + bIcon('collab', 'op-lkico') + ' ' + o.links + '</span></div></div>';
+  // Distinct per-team colors so each team area is easy to tell apart.
+  const TEAM_COLORS = ['#e0746a', '#5b86d8', '#3fb98e', '#caa15a', '#9b7ef0', '#e06aa8', '#46b1b1', '#d2884a'];
+  function teamColor(tm) {
+    const i = state.teams.indexOf(tm);
+    return TEAM_COLORS[(i < 0 ? 0 : i) % TEAM_COLORS.length];
   }
-  function objGroup(label, list) {
-    return '<div class="ob-grp"><span>' + label + '</span><span class="ob-n">' + list.length + '</span></div>' +
-      list.map(objRow).join('');
+  function teamInitials(name) { return String(name || '').trim().slice(0, 2).toUpperCase() || 'T'; }
+  function objRow(o, i) {
+    return '<div class="ob-item">' +
+      '<span class="ob-num">' + (i + 1) + '</span>' +
+      '<div class="ob-body"><div class="ob-t">' + esc(o.text) + '</div>' +
+        '<div class="ob-meta"><span class="ob-bv">' + o.bv + ' BV</span>' +
+        '<span class="ob-lk">' + bIcon('collab', 'op-lkico') + ' ' + o.links + '</span></div>' +
+      '</div></div>';
+  }
+  function objGroup(label, list, kind) {
+    if (!list.length) return '';
+    return '<div class="ob-grp ob-grp--' + kind + '"><span class="ob-dot"></span><span>' + label +
+      '</span><span class="ob-n">' + list.length + '</span></div>' +
+      '<div class="ob-list">' + list.map(objRow).join('') + '</div>';
   }
   function teamBlock(tm) {
     const objs = tm.objectives || [];
     const com = objs.filter((o) => o.committed), unc = objs.filter((o) => !o.committed);
-    return '<section class="obj-block"><div class="ob-head">' + esc(tm.name) + '</div>' +
-      objGroup('Commited', com) + objGroup('Uncommitted', unc) + '</section>';
+    const color = teamColor(tm);
+    return '<section class="obj-block" style="--team:' + color + ';--team-soft:' + hexToRgba(color, 0.12) + '">' +
+      '<div class="ob-head">' +
+        '<span class="ob-av">' + esc(teamInitials(tm.name)) + '</span>' +
+        '<span class="ob-name">' + esc(tm.name) + '</span>' +
+        '<span class="ob-count">' + objs.length + '</span>' +
+      '</div>' +
+      objGroup('Committed', com, 'com') + objGroup('Uncommitted', unc, 'unc') + '</section>';
   }
   function estBlock(tm) {
     const objs = tm.objectives || [];
-    return 56 + 2 * 34 + objs.length * 78; // header + 2 group labels + items
+    const groups = (objs.some((o) => o.committed) ? 1 : 0) + (objs.some((o) => !o.committed) ? 1 : 0);
+    return 66 + groups * 32 + objs.length * 66 + 16; // header + group labels + items + card gap
   }
   function renderObjectivesBoard() {
     const COLS = 3;
