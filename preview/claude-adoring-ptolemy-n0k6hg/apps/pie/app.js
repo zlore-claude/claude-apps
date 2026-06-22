@@ -508,23 +508,32 @@
     });
     return { cols, maxH: Math.max.apply(null, h) };
   }
-  const OBJ_COL_W = 320; // target readable column width
+  function objSheetHtml(packed, n) {
+    return '<div class="obj-sheet">' + packed.cols.map((ct, ci) =>
+      '<div class="obj-col' + (ci === n - 1 ? ' last-col' : '') + '">' +
+      ct.map(teamBlock).join('') + '</div>').join('') + '</div>';
+  }
   function renderObjectivesBoard() {
     const teams = activeArt().teams;
     const availW = canvasWrap.clientWidth - hpad.l - hpad.r;
     const availH = canvasWrap.clientHeight - 2 * PAD;
-    // Columns sized for readability fill the full width; the board stretches to
-    // at least the viewport height (so 100% fills width AND height with
-    // padding) and grows taller for dense ARTs, which then pan vertically.
-    const n = Math.max(3, Math.min(teams.length, Math.round(availW / OBJ_COL_W)));
-    const packed = packTeams(teams, n);
     boardW = availW;
     canvas.style.width = boardW + 'px';
     canvas.style.height = 'auto';
-    canvas.innerHTML = '<div class="obj-sheet">' + packed.cols.map((ct, ci) =>
-      '<div class="obj-col' + (ci === n - 1 ? ' last-col' : '') + '">' +
-      ct.map(teamBlock).join('') + '</div>').join('') + '</div>';
-    boardH = Math.max(availH, canvas.firstChild.scrollHeight);
+    // Find the fewest columns whose laid-out height fits the viewport; more
+    // objectives -> more columns to flatten the board so it fills the width
+    // before we have to scale down. If nothing fits, keep the shortest layout
+    // and let the whole board scale down so everything stays visible.
+    const maxCols = Math.max(3, Math.min(teams.length, Math.floor(availW / 150) || 3));
+    let bestN = 3, bestH = Infinity, fitN = 0;
+    for (let n = 3; n <= maxCols; n++) {
+      canvas.innerHTML = objSheetHtml(packTeams(teams, n), n);
+      const h = canvas.firstChild.scrollHeight;
+      if (h < bestH) { bestH = h; bestN = n; }
+      if (h <= availH) { fitN = n; bestH = h; break; }
+    }
+    if (!fitN && bestN !== maxCols) canvas.innerHTML = objSheetHtml(packTeams(teams, bestN), bestN);
+    boardH = bestH;
     canvas.style.height = boardH + 'px';
   }
 
@@ -581,10 +590,14 @@
   function clampN(v, a, b) { return Math.min(b, Math.max(a, v)); }
   function fitScale() {
     if (!boardW) return 1;
-    // 100% = the board filling the viewport width (with padding). Boards are
-    // sized to be at least viewport-tall, so this also fills the height; denser
-    // boards extend below and pan vertically.
-    return (canvasWrap.clientWidth - hpad.l - hpad.r) / boardW;
+    // 100% = the whole board fitting the viewport (width AND height) with
+    // padding, so everything is visible. The binding dimension fits exactly;
+    // the ART Objectives board adds columns to flatten itself so the width
+    // does most of the binding before any scale-down is needed.
+    const sx = (canvasWrap.clientWidth - hpad.l - hpad.r) / boardW;
+    if (!boardH) return sx;
+    const sy = (canvasWrap.clientHeight - PAD * 2) / boardH;
+    return Math.min(sx, sy);
   }
   function clampView() {
     const vw = canvasWrap.clientWidth, vh = canvasWrap.clientHeight, P = PAD;
