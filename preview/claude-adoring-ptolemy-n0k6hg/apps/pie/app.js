@@ -364,14 +364,30 @@
   }
 
   // ---------- Canvas (one continuous board sheet) ----------
-  const PCOLS = 4, PAD = 20, MAXZOOM = 3;
+  const PCOLS = 4, PAD = 20, MAXZOOM = 3, RAIL_GAP = 14;
   let boardW = 0, boardH = 0;
+  // Horizontal insets for fitting the board. The floating side rail overlaps the
+  // canvas, so reserve room on whichever side it currently sits (left normally,
+  // right on ART Objectives) plus a small gap; vertical padding stays PAD.
+  let hpad = { l: PAD, r: PAD };
+  function measureInsets() {
+    let l = PAD, r = PAD;
+    const w = canvasWrap.getBoundingClientRect();
+    if (w.width) {
+      const rr = srail.getBoundingClientRect();
+      if (srail.classList.contains('srail--right')) r = Math.max(PAD, w.right - rr.left + RAIL_GAP);
+      else l = Math.max(PAD, rr.right - w.left + RAIL_GAP);
+    }
+    hpad = { l, r };
+    return hpad;
+  }
   const RAIL_NAMES = {
     solbacklog: 'Solution Backlog Board', solplan: 'Solution Planning Board',
     artbacklog: 'ART Backlog Board', artplan: 'ART Planning Board',
     objectives: 'ART Objectives', risk: 'Risk Board', collab: 'Collaboration Boards',
   };
   function renderCanvas() {
+    measureInsets();
     if (railActive === 'objectives') return renderObjectivesBoard();
     if (railActive === 'team') return renderTeamBoard();
     return renderPlaceholderBoard();
@@ -380,7 +396,7 @@
     const iters = state.sprints.map((name, idx) => ({ type: 'iter', idx, name }));
     const items = iters.slice(0, 4).concat([{ type: 'obj' }, { type: 'risk' }]).concat(iters.slice(4));
     const rows = Math.ceil(items.length / PCOLS);
-    boardW = canvasWrap.clientWidth - 2 * PAD;
+    boardW = canvasWrap.clientWidth - hpad.l - hpad.r;
     boardH = canvasWrap.clientHeight - 2 * PAD;
     canvas.style.width = boardW + 'px';
     canvas.style.height = boardH + 'px';
@@ -422,7 +438,7 @@
       const ci = colH.indexOf(Math.min.apply(null, colH));
       cols[ci].push(tm); colH[ci] += estBlock(tm);
     });
-    const availW = canvasWrap.clientWidth - 2 * PAD;
+    const availW = canvasWrap.clientWidth - hpad.l - hpad.r;
     const availH = canvasWrap.clientHeight - 2 * PAD;
     boardW = availW;
     canvas.style.width = boardW + 'px';
@@ -435,7 +451,7 @@
   }
 
   function renderPlaceholderBoard() {
-    boardW = canvasWrap.clientWidth - 2 * PAD;
+    boardW = canvasWrap.clientWidth - hpad.l - hpad.r;
     boardH = canvasWrap.clientHeight - 2 * PAD;
     canvas.style.width = boardW + 'px';
     canvas.style.height = boardH + 'px';
@@ -491,15 +507,16 @@
     // whole board. Most boards are sized to the viewport (so width wins), but
     // the ART Objectives board can be taller than the viewport — there height
     // is what has to fit.
-    const sx = (canvasWrap.clientWidth - PAD * 2) / boardW;
+    const sx = (canvasWrap.clientWidth - hpad.l - hpad.r) / boardW;
     if (!boardH) return sx;
     const sy = (canvasWrap.clientHeight - PAD * 2) / boardH;
     return Math.min(sx, sy);
   }
   function clampView() {
     const vw = canvasWrap.clientWidth, vh = canvasWrap.clientHeight, P = PAD;
+    const L = hpad.l, R = hpad.r;
     const bw = boardW * view.scale, bh = boardH * view.scale;
-    view.x = bw <= vw - 2 * P ? (vw - bw) / 2 : clampN(view.x, vw - P - bw, P);
+    view.x = bw <= vw - L - R ? L + (vw - L - R - bw) / 2 : clampN(view.x, vw - R - bw, L);
     view.y = bh <= vh - 2 * P ? (vh - bh) / 2 : clampN(view.y, vh - P - bh, P);
   }
   function applyView() {
@@ -507,7 +524,7 @@
     const z = zoomctl.querySelector('.z-val');
     if (z) z.textContent = Math.round((view.scale / (fitScale() || 1)) * 100) + '%';
   }
-  function fitView() { view.scale = fitScale(); view.x = PAD; view.y = PAD; clampView(); applyView(); }
+  function fitView() { measureInsets(); view.scale = fitScale(); view.x = hpad.l; view.y = PAD; clampView(); applyView(); }
   function setScale(ns, mx, my) {
     const fs = fitScale();
     ns = clampN(ns, fs, fs * MAXZOOM);
