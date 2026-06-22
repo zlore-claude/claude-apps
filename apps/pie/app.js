@@ -487,7 +487,14 @@
   function clampN(v, a, b) { return Math.min(b, Math.max(a, v)); }
   function fitScale() {
     if (!boardW) return 1;
-    return (canvasWrap.clientWidth - PAD * 2) / boardW;
+    // Fit to whichever dimension is the binding constraint so 100% shows the
+    // whole board. Most boards are sized to the viewport (so width wins), but
+    // the ART Objectives board can be taller than the viewport — there height
+    // is what has to fit.
+    const sx = (canvasWrap.clientWidth - PAD * 2) / boardW;
+    if (!boardH) return sx;
+    const sy = (canvasWrap.clientHeight - PAD * 2) / boardH;
+    return Math.min(sx, sy);
   }
   function clampView() {
     const vw = canvasWrap.clientWidth, vh = canvasWrap.clientHeight, P = PAD;
