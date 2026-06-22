@@ -232,46 +232,20 @@ body {
 .as-bv-box { min-width: 26px; height: 26px; padding: 0 6px; border: 1px solid var(--r-line); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1b1f27; }
 .as-lk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--r-dim); }
 
-/* ART Objectives: each team is its own color-coded card on the canvas */
-.obj-sheet { position: relative; display: flex; align-items: flex-start; gap: 16px; min-height: 100%; padding: 2px; }
-.obj-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-
-.obj-block {
-  --team: #5b86d8; --team-soft: rgba(91,134,216,.12);
-  background: #fff; border: 1px solid #e4e7ee; border-top: 3px solid var(--team);
-  border-radius: 14px; overflow: hidden; box-shadow: 0 6px 18px rgba(20,30,50,.07);
-}
-.ob-head {
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-  background: var(--team-soft); border-bottom: 1px solid #eef0f4;
-}
-.ob-av {
-  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: var(--team);
-  color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .02em;
-  display: flex; align-items: center; justify-content: center;
-}
-.ob-name { flex: 1 1 auto; min-width: 0; font-size: 14.5px; font-weight: 800; color: #1b1f27;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ob-count { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--team);
-  background: var(--team-soft); border-radius: 20px; padding: 3px 9px; }
-
-.ob-grp { display: flex; align-items: center; gap: 7px; padding: 11px 14px 5px;
-  font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #6b7480; }
-.ob-grp .ob-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
-.ob-grp--com .ob-dot { background: #46b16a; }
-.ob-grp--unc .ob-dot { width: 9px; height: 9px; background: #fff; border: 2px solid #c8ccd6; box-sizing: border-box; }
-.ob-grp .ob-n { margin-left: auto; letter-spacing: 0; color: #9aa1ad; }
-
-.ob-list { display: flex; flex-direction: column; }
-.ob-item { display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #f3f4f7; }
-.ob-list .ob-item:first-child { border-top: 0; }
-.ob-num { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px;
-  background: #f1f2f6; color: #6b7480; font-size: 11px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center; }
-.ob-body { flex: 1 1 auto; min-width: 0; }
-.ob-t { font-size: 13px; color: #2c333f; line-height: 1.42; }
-.ob-meta { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
-.ob-bv { font-size: 11px; font-weight: 700; color: #44505f; background: #f1f2f6; border-radius: 6px; padding: 3px 7px; }
+/* ART Objectives: one continuous board; teams flow together, marked by color */
+.obj-sheet { position: relative; display: flex; align-items: stretch; height: 100%; background: #fff; border: 1px solid #dfe2e9; border-radius: 16px; box-shadow: 0 12px 44px rgba(20,30,50,.12); overflow: hidden; }
+.obj-col { flex: 1 1 0; min-width: 0; border-right: 1px solid #ebedf2; }
+.obj-col.last-col { border-right: 0; }
+.obj-block { padding: 16px 18px 18px; border-bottom: 1px solid #ebedf2; }
+.ob-head { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+.ob-mark { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 3px; }
+.ob-grp { display: flex; align-items: center; padding: 12px 0 4px; font-size: 13px; font-weight: 700; color: #44505f; }
+.ob-grp .ob-n { margin-left: auto; color: var(--r-faint); }
+.ob-item { padding: 10px 0; }
+.ob-t { font-size: 13px; color: #2c333f; line-height: 1.4; }
+.ob-t b { color: var(--r-faint); font-weight: 700; margin-right: 5px; }
+.ob-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.ob-bv { font-size: 11.5px; font-weight: 700; color: #44505f; background: #f1f2f6; border-radius: 6px; padding: 3px 7px; }
 .ob-lk { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--r-dim); }
 .ob-lk svg { width: 13px; height: 13px; stroke: currentColor; }
 
