@@ -108,7 +108,63 @@
     ];
   }
 
-  // ---------- DOM ----------
+  // ---------- Jira board configuration (for the ART Kanban column mapping) ----------
+  // Each status belongs to a Jira status *category* (To Do / In Progress / Done).
+  // The legacy ART Kanban groups by category only — hence "random" order within.
+  const JIRA_STATUSES = [
+    { name: 'To Do', cat: 'To Do' },
+    { name: 'Refined', cat: 'To Do' },
+    { name: 'Ready for Dev', cat: 'To Do' },
+    { name: 'Analysis', cat: 'In Progress' },
+    { name: 'In Progress', cat: 'In Progress' },
+    { name: 'In Review', cat: 'In Progress' },
+    { name: 'QA', cat: 'In Progress' },
+    { name: 'Blocked', cat: 'In Progress' },
+    { name: 'Done', cat: 'Done' },
+    { name: 'Released', cat: 'Done' },
+  ];
+  const STATUS_CAT = JIRA_STATUSES.reduce((m, s) => (m[s.name] = s.cat, m), {});
+  const CATS = ['To Do', 'In Progress', 'Done'];
+  // Sample Jira boards available on the connection, each with an ordered column
+  // config (column -> ordered statuses). This is the source of truth the fix uses.
+  const JIRA_BOARDS = [
+    { id: 'b-art', name: 'ART Delivery Board', type: 'Kanban', columns: [
+      { name: 'Backlog', statuses: ['To Do', 'Refined'] },
+      { name: 'Analysis', statuses: ['Ready for Dev', 'Analysis'] },
+      { name: 'In Development', statuses: ['In Progress'] },
+      { name: 'Review', statuses: ['In Review', 'QA'] },
+      { name: 'Done', statuses: ['Done', 'Released'] },
+    ] },
+    { id: 'b-scrum', name: 'Program Scrum Board', type: 'Scrum', columns: [
+      { name: 'To Do', statuses: ['To Do', 'Refined', 'Ready for Dev'] },
+      { name: 'In Progress', statuses: ['In Progress', 'In Review', 'QA'] },
+      { name: 'Done', statuses: ['Done', 'Released'] },
+    ] },
+    { id: 'b-portfolio', name: 'Portfolio Kanban', type: 'Kanban', columns: [
+      { name: 'Funnel', statuses: ['To Do'] },
+      { name: 'Reviewing', statuses: ['Refined', 'Analysis'] },
+      { name: 'Backlog', statuses: ['Ready for Dev'] },
+      { name: 'Implementing', statuses: ['In Progress', 'In Review'] },
+      { name: 'Validating', statuses: ['QA'] },
+      { name: 'Released', statuses: ['Done', 'Released'] },
+    ] },
+  ];
+  const boardById = (id) => JIRA_BOARDS.find((b) => b.id === id) || null;
+  const FEATURE_TITLES = [
+    'Passwordless sign-in', 'Unified search', 'Invoice redesign', 'Realtime alerts',
+    'Partner API beta', 'Usage metering', 'Onboarding checklist', 'Audit trail',
+    'Bulk export', 'SSO hardening', 'Cost dashboard', 'Webhook retries',
+    'Mobile deep links', 'Ledger migration', 'Rate limiter', 'Feature flags',
+  ];
+  function genFeatures(seed, n) {
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      const st = JIRA_STATUSES[(seed * 3 + k * 7) % JIRA_STATUSES.length];
+      out.push({ id: uid(), title: FEATURE_TITLES[(seed + k) % FEATURE_TITLES.length], status: st.name, rank: k + 1 });
+    }
+    return out;
+  }
+
   const loading = document.getElementById('app-loading');
   const shell = document.getElementById('shell');
   const sideEl = document.getElementById('side');
@@ -184,6 +240,15 @@
     if (!Array.isArray(s.artObjectives)) s.artObjectives = genArtObjectives();
     if (!Array.isArray(s.arts) || !s.arts.length || s.artsV !== ARTS_V) { s.arts = genArts(); s.artsV = ARTS_V; }
     if (typeof s.activeArt !== 'number' || s.activeArt < 0 || s.activeArt >= s.arts.length) s.activeArt = 0;
+    s.arts.forEach((a, i) => {
+      // ART Kanban column source: 'status' = legacy (status categories, random
+      // order within); 'board' = mirror a configured Jira board's columns.
+      if (!a.kanban) a.kanban = { source: 'status', boardId: null };
+      if (!Array.isArray(a.features)) {
+        const objN = a.teams.reduce((n, t) => n + (t.objectives ? t.objectives.length : 0), 0);
+        a.features = genFeatures(i + 1, Math.max(5, Math.min(18, Math.round(objN / 4) || 5)));
+      }
+    });
     s.context = Object.assign({ board: 'Team Board', program: 'Terra', team: 'Zürich', dates: '13 Jan - 13 Feb' }, s.context);
     // Shell / dashboard data (illustrative — distinct from the reference app)
     s.plan = Object.assign({ name: 'Team', teamLimit: 60, renews: '92d' }, s.plan);
@@ -305,14 +370,17 @@
   function renderTopNav() {
     const c = state.context;
     const obj = railActive === 'objectives';
+    const isArt = obj || railActive === 'artbacklog';
     const avatars = [['AR', '#e0746a'], ['MK', '#6a9be0'], ['TS', '#6ad0a8'], ['JD', '#caa15a']]
       .map((a) => avatar(a[0], a[1])).join('');
     let left, center;
-    if (obj) {
+    if (isArt) {
+      const hereIco = obj ? 'objectives' : 'artbacklog';
+      const hereTxt = obj ? 'ART Objectives' : 'ART Backlog Kanban';
       left =
         '<button class="bn-ico bn-home" type="button" data-nav="home" title="Dashboard">' + bIcon('apps') + '</button>' +
-        '<button class="bn-chip" type="button" data-nav="toggle-art">' + bIcon('objectives', 'bn-cico') +
-          '<span>' + (objPanelOpen ? 'Hide' : 'Show') + ' ART Objectives</span></button>';
+        (obj ? '<button class="bn-chip" type="button" data-nav="toggle-art">' + bIcon('objectives', 'bn-cico') +
+          '<span>' + (objPanelOpen ? 'Hide' : 'Show') + ' ART Objectives</span></button>' : '');
       const art = activeArt();
       const objCount = (a) => a.teams.reduce((n, t) => n + (t.objectives ? t.objectives.length : 0), 0);
       const items = state.arts.map((a, i) =>
@@ -320,12 +388,12 @@
           '<span class="bn-mi-name">' + esc(a.name) + '</span>' +
           '<small>' + a.teams.length + ' teams · ' + objCount(a) + ' objectives</small></button>').join('');
       center =
-        '<span class="bn-here">' + bIcon('objectives', 'bn-cico') + '<span>ART Objectives</span></span>' +
+        '<span class="bn-here">' + bIcon(hereIco, 'bn-cico') + '<span>' + hereTxt + '</span></span>' +
         '<div class="bn-artsel">' +
           '<button class="bn-chip" type="button" data-nav="art-menu" aria-haspopup="true" aria-expanded="' + (artMenuOpen ? 'true' : 'false') + '">' +
             bIcon('people', 'bn-cico') + '<span>' + esc(art.name) + '</span>' + bIcon('chev', 'bn-chev') + '</button>' +
           '<div class="bn-menu"' + (artMenuOpen ? '' : ' hidden') + '>' +
-            '<div class="bn-menu-h">Change teams</div>' + items + '</div>' +
+            '<div class="bn-menu-h">Switch ART</div>' + items + '</div>' +
         '</div>';
     } else {
       left =
@@ -460,6 +528,7 @@
   function renderCanvas() {
     measureInsets();
     if (railActive === 'objectives') return renderObjectivesBoard();
+    if (railActive === 'artbacklog') return renderArtKanban();
     if (railActive === 'team') return renderTeamBoard();
     return renderPlaceholderBoard();
   }
@@ -565,6 +634,72 @@
     canvas.innerHTML = '<div class="board-sheet wb-soon"><div class="soon-card">' +
       bIcon('apps', 'soon-ic') + '<h3>' + esc(RAIL_NAMES[railActive] || 'Board') + '</h3>' +
       '<p>This board isn’t wired up yet — coming next.</p></div></div>';
+  }
+
+  // ---------- ART Kanban (columns mirror a configured Jira board) ----------
+  // The whole point of the feature: when an ART has a reference Jira board set,
+  // its Kanban columns + labels + order come from that board's column config.
+  // Otherwise we fall back to the legacy status-category grouping.
+  function kanbanModel(art) {
+    const feats = (art.features || []).slice();
+    const cfg = art.kanban || { source: 'status', boardId: null };
+    const board = cfg.source === 'board' ? boardById(cfg.boardId) : null;
+    if (board) {
+      const cols = board.columns.map((c) => ({ name: c.name, statuses: c.statuses.slice(), items: [] }));
+      const colOf = {};
+      board.columns.forEach((c, ci) => c.statuses.forEach((st) => { colOf[st] = ci; }));
+      const unmapped = { name: 'Unmapped', statuses: [], items: [], unmapped: true };
+      feats.forEach((f) => {
+        const ci = colOf[f.status];
+        if (ci == null) {
+          if (!unmapped.statuses.includes(f.status)) unmapped.statuses.push(f.status);
+          unmapped.items.push(f);
+        } else cols[ci].items.push(f);
+      });
+      cols.forEach((c) => c.items.sort((a, b) =>
+        (c.statuses.indexOf(a.status) - c.statuses.indexOf(b.status)) || (a.rank - b.rank)));
+      if (unmapped.items.length) cols.push(unmapped);
+      return { mode: 'board', board, cols };
+    }
+    // legacy: one column per distinct status, grouped by category, arbitrary order within
+    const seen = [];
+    feats.forEach((f) => { if (!seen.includes(f.status)) seen.push(f.status); });
+    const cols = [];
+    CATS.forEach((cat) => seen.filter((st) => STATUS_CAT[st] === cat).forEach((st) =>
+      cols.push({ name: st, cat, statuses: [st], items: feats.filter((f) => f.status === st).sort((a, b) => a.rank - b.rank) })));
+    return { mode: 'status', cols };
+  }
+  function kbCard(f) {
+    return '<div class="kb-card"><div class="kb-card-t">' + esc(f.title) + '</div>' +
+      '<div class="kb-card-m"><span class="kb-stt">' + esc(f.status) + '</span><span class="kb-rk">#' + f.rank + '</span></div></div>';
+  }
+  function kanbanColsHtml(model) {
+    return '<div class="kb-board">' + model.cols.map((c) =>
+      '<div class="kb-col' + (c.unmapped ? ' kb-unmapped' : '') + (c.cat ? ' kb-cat-' + c.cat.replace(/\s/g, '') : '') + '">' +
+        '<div class="kb-col-h"><span class="kb-col-n">' + esc(c.name) + '</span>' +
+          '<span class="kb-col-c">' + c.items.length + '</span></div>' +
+        (c.statuses && c.statuses.length > 1 ?
+          '<div class="kb-col-st">' + c.statuses.map((s) => '<span class="kb-st">' + esc(s) + '</span>').join('') + '</div>' : '') +
+        '<div class="kb-col-b">' + (c.items.map(kbCard).join('') || '<div class="kb-empty">—</div>') + '</div>' +
+      '</div>').join('') + '</div>';
+  }
+  function renderArtKanban() {
+    const art = activeArt();
+    const availW = canvasWrap.clientWidth - hpad.l - hpad.r;
+    const availH = canvasWrap.clientHeight - 2 * PAD;
+    const model = kanbanModel(art);
+    const src = model.mode === 'board'
+      ? 'Columns from <b>' + esc(model.board.name) + '</b> (' + esc(model.board.type) + ')'
+      : 'Columns from Jira status categories <span class="kb-warn">· order within a category is undefined</span>';
+    boardW = availW;
+    canvas.style.width = boardW + 'px';
+    canvas.style.height = 'auto';
+    canvas.innerHTML = '<div class="kb-sheet">' +
+      '<div class="kb-head"><span class="kb-title">' + esc(art.name) + ' · ART Backlog Kanban</span>' +
+        '<span class="kb-src">' + src + '</span></div>' +
+      kanbanColsHtml(model) + '</div>';
+    boardH = Math.max(availH, canvas.firstChild.scrollHeight);
+    canvas.style.height = boardH + 'px';
   }
 
   // ART Objectives side panel (collapsible)
@@ -799,6 +934,11 @@
 
   // ---------- Light shell: sidebar + routed pages ----------
   let currentPage = 'home';
+  // ALM Connections editor state: which connection / wizard step / which ART.
+  let connEdit = null;   // connection id being edited (null = list)
+  let connStep = 'connection'; // connection | webhook | team | art
+  let artEdit = null;    // ART index being edited inside ART Mapping (null = list)
+  let artTab = 'projects'; // projects | artfields | teamfields | kanban
 
   function icon(name, cls) {
     const P = {
@@ -857,7 +997,7 @@
 
   sideEl.addEventListener('click', (e) => {
     const nav = e.target.closest('.nav-i');
-    if (nav) { navigate(nav.dataset.page); return; }
+    if (nav) { if (nav.dataset.page === 'connections') { connEdit = null; artEdit = null; } navigate(nav.dataset.page); return; }
     const act = e.target.closest('[data-act]');
     if (!act) return;
     const a = act.dataset.act;
@@ -951,12 +1091,131 @@
       '<div class="panel-foot"><a data-act="open-session" data-name="' + esc(state.piName) + '">+ New session</a>' +
       '<span class="pf-total">' + state.sessionTotal + ' total</span></div></div></section>';
   }
+  let artSnapshot = null; // kanban config snapshot for Discard
+
   function renderConnections() {
+    if (connEdit == null) renderConnList();
+    else renderConnEditor();
+    mainEl.scrollTop = mainEl.scrollTop; // keep position on in-place re-render
+  }
+  function renderConnList() {
+    const rows = state.connections.map((c) =>
+      '<div class="alm-row alm-click" data-act="edit-conn" data-id="' + c.id + '">' +
+        '<span class="alm-name">' + esc(c.name) + '</span>' +
+        '<span class="alm-tool">' + esc(c.type) + '</span>' +
+        '<span class="alm-status">' + (c.ok ? '<span class="dot-ok"></span>' : '<span class="dot-warn">⚠</span>') + '</span>' +
+        '<button class="alm-edit" type="button" data-act="edit-conn" data-id="' + c.id + '" aria-label="Edit">✎</button>' +
+      '</div>').join('');
     mainEl.innerHTML =
-      '<section class="page"><h1 class="page-h">ALM Connections</h1>' +
-      '<p class="page-sub">Where Pie syncs features, stories and objectives.</p>' +
-      '<div class="panel"><div class="p-list" style="padding-top:8px">' + connectionRows() + '</div>' +
-      '<div class="panel-foot"><span class="pf-total">' + state.connectionTotal + ' total</span></div></div></section>';
+      '<section class="page"><div class="alm-head"><h1 class="page-h">ALM Connections</h1>' +
+        '<button class="r-btn" type="button" disabled>+ Add connection</button></div>' +
+      '<p class="page-sub">Where Pie syncs features, stories and objectives. Open a Jira connection to reach ART Mapping.</p>' +
+      '<div class="alm-table"><div class="alm-row alm-hd"><span>Name</span><span>ALM Tool</span><span>Status</span><span></span></div>' +
+      rows + '</div></section>';
+  }
+  function renderConnEditor() {
+    const conn = state.connections.find((c) => c.id === connEdit) || state.connections[0];
+    const steps = [['connection', 'Connection'], ['webhook', 'Webhook'], ['team', 'Team Mapping'], ['art', 'ART Mapping']];
+    const stepper = '<div class="wz-steps">' + steps.map((s, i) =>
+      '<button class="wz-step' + (connStep === s[0] ? ' on' : '') + '" type="button" data-act="conn-step" data-step="' + s[0] + '">' +
+        '<span class="wz-num">' + (i + 1) + '</span><span class="wz-lbl">' + s[1] + '</span></button>').join('') + '</div>';
+    const body = connStep === 'art' ? artMappingHtml() : stepStubHtml(connStep, conn);
+    mainEl.innerHTML =
+      '<section class="page wz">' +
+        '<div class="wz-top"><button class="lnk-back" type="button" data-act="conn-back">← ALM Connections</button>' +
+          '<span class="wz-conn">' + esc(conn.name) + '</span></div>' +
+        stepper + '<div class="wz-body">' + body + '</div>' +
+      '</section>';
+    if (connStep === 'art' && artEdit != null) wireArtEditor();
+  }
+  function stepStubHtml(step, conn) {
+    const ro = (k, v) => '<div class="kt-ro"><span>' + esc(k) + '</span><b>' + esc(v) + '</b></div>';
+    if (step === 'connection') return '<div class="kt-card"><h3>Connection</h3>' +
+      ro('Connection name', conn.name) + ro('ALM tool', conn.type) + ro('Status', conn.ok ? 'Active' : 'Needs attention') +
+      '<p class="kt-hint">Auth, instance URL and certificates live here in the full app.</p></div>';
+    if (step === 'webhook') return '<div class="kt-card"><h3>Webhook</h3>' +
+      '<p class="kt-hint">Inbound webhook delivery configuration — illustrative in this demo.</p></div>';
+    return '<div class="kt-card"><h3>Team Mapping</h3>' +
+      '<p class="kt-hint">Each team maps to a Jira project <b>and a board</b>. The already-shipped Team Board fix reads that board’s columns. ART Mapping (next step) adds the same for the ART level.</p></div>';
+  }
+  function artMappingHtml() {
+    if (artEdit != null) return artEditorHtml();
+    const rows = state.arts.map((a, i) => {
+      const onBoard = a.kanban && a.kanban.source === 'board' && boardById(a.kanban.boardId);
+      return '<div class="alm-row alm-click" data-act="edit-art" data-i="' + i + '">' +
+        '<span class="alm-name">' + esc(a.name) + '</span>' +
+        '<span class="alm-tool">' + (i % 2 ? 'ST' : '') + '</span>' +
+        '<span class="kb-badge' + (onBoard ? ' on' : '') + '">' + (onBoard ? 'Board columns' : 'Status categories') + '</span>' +
+        '<button class="alm-edit" type="button" data-act="edit-art" data-i="' + i + '" aria-label="Edit">✎</button>' +
+      '</div>';
+    }).join('');
+    return '<div class="alm-subhead"><h2>ART Mapping</h2><button class="r-btn" type="button" disabled>Check for errors</button></div>' +
+      '<div class="alm-table"><div class="alm-row alm-hd"><span>ART</span><span>Solution Train</span><span>ART Kanban</span><span></span></div>' +
+      rows + '</div>';
+  }
+  function artEditorHtml() {
+    const a = state.arts[artEdit];
+    const tabs = [['projects', 'Projects'], ['artfields', 'ART field mapping'], ['teamfields', 'Team field mapping'], ['kanban', 'ART Kanban']];
+    const tabbar = '<div class="ae-tabs">' + tabs.map((t) =>
+      '<button class="ae-tab' + (artTab === t[0] ? ' on' : '') + (t[0] === 'kanban' ? ' ae-new' : '') + '" type="button" data-act="art-tab" data-tab="' + t[0] + '">' +
+        t[1] + (t[0] === 'kanban' ? '<span class="ae-dot">NEW</span>' : '') + '</button>').join('') + '</div>';
+    let body;
+    if (artTab === 'kanban') body = kanbanTabHtml(a);
+    else if (artTab === 'projects') body = '<div class="kt-card"><h3>Projects</h3>' +
+      '<div class="kt-ro"><span>Jira project</span><b>' + esc(a.name) + ' Backlog</b></div>' +
+      '<p class="kt-hint">One or more Jira projects hold this ART’s features. ART items can span several projects/boards.</p></div>';
+    else body = '<div class="kt-card"><h3>' + (artTab === 'artfields' ? 'ART field mapping' : 'Team field mapping') + '</h3>' +
+      '<p class="kt-hint">Field mapping is illustrative in this demo.</p></div>';
+    return '<div class="ae-head"><button class="lnk-back" type="button" data-act="art-back">← ART Mapping</button>' +
+      '<span class="ae-name">' + esc(a.name) + '</span>' +
+      '<div class="ae-actions"><button class="r-btn" type="button" data-act="art-discard">Discard</button>' +
+      '<button class="r-btn primary" type="button" data-act="art-save">Save</button></div></div>' +
+      tabbar + '<div class="ae-body">' + body + '</div>';
+  }
+  // ---- THE FEATURE: ART Kanban column-source mapping ----
+  function kanbanTabHtml(a) {
+    const cfg = a.kanban;
+    const onBoard = cfg.source === 'board';
+    const boardOpts = '<option value="">— Select a Jira board —</option>' + JIRA_BOARDS.map((b) =>
+      '<option value="' + b.id + '"' + (cfg.boardId === b.id ? ' selected' : '') + '>' + esc(b.name) + ' (' + esc(b.type) + ')</option>').join('');
+    const model = kanbanModel(a);
+    const hasUnmapped = model.mode === 'board' && model.cols.some((c) => c.unmapped);
+    return '<div class="kt-card">' +
+      '<h3>ART Kanban column source</h3>' +
+      '<p class="r-desc">How the ART Backlog Kanban builds its columns for ' + esc(a.name) + '.</p>' +
+      '<label class="kt-opt' + (!onBoard ? ' on' : '') + '"><input type="radio" name="kbsrc" value="status"' + (!onBoard ? ' checked' : '') + ' data-act="kb-src">' +
+        '<span><b>Jira status categories</b><small>Legacy. Columns = every status grouped under To Do / In Progress / Done; order within a category is undefined.</small></span></label>' +
+      '<label class="kt-opt' + (onBoard ? ' on' : '') + '"><input type="radio" name="kbsrc" value="board"' + (onBoard ? ' checked' : '') + ' data-act="kb-src">' +
+        '<span><b>Mirror a Jira board</b><small>Columns, labels and order come from a configured Jira Kanban/Scrum board.</small></span></label>' +
+      '<div class="kt-board-sel' + (onBoard ? '' : ' off') + '">' +
+        '<label class="kt-lbl">Reference Jira board</label>' +
+        '<select class="kt-select" data-act="kb-board"' + (onBoard ? '' : ' disabled') + '>' + boardOpts + '</select>' +
+        boardColsHtml(cfg) +
+      '</div>' +
+    '</div>' +
+    '<div class="kt-card"><h3>Preview · ART Backlog Kanban</h3>' +
+      '<p class="r-desc">Exactly how the board will render for this ART.</p>' +
+      '<div class="kt-preview">' + kanbanColsHtml(model) + '</div>' +
+      (hasUnmapped ? '<p class="kt-note">⚠ Features whose Jira status isn’t on the selected board fall into an <b>Unmapped</b> column — decide with the team whether to remap statuses or add them to a board column.</p>' : '') +
+    '</div>';
+  }
+  function boardColsHtml(cfg) {
+    const b = cfg.source === 'board' && boardById(cfg.boardId);
+    if (!b) return '<p class="kt-hint">Select a board to use its column configuration as the source of truth.</p>';
+    return '<div class="kt-cols">' + b.columns.map((c, i) =>
+      '<div class="kt-col"><span class="kt-col-i">' + (i + 1) + '</span><span class="kt-col-n">' + esc(c.name) + '</span>' +
+      '<span class="kt-col-st">' + c.statuses.map((s) => '<span class="kb-st">' + esc(s) + '</span>').join('') + '</span></div>').join('') + '</div>';
+  }
+  function wireArtEditor() {
+    const a = state.arts[artEdit];
+    mainEl.querySelectorAll('[data-act="kb-src"]').forEach((r) => r.addEventListener('change', () => {
+      if (!r.checked) return;
+      a.kanban.source = r.value;
+      if (r.value === 'board' && !a.kanban.boardId) a.kanban.boardId = JIRA_BOARDS[0].id;
+      save(); renderConnections();
+    }));
+    const sel = mainEl.querySelector('[data-act="kb-board"]');
+    if (sel) sel.addEventListener('change', () => { a.kanban.boardId = sel.value || null; save(); renderConnections(); });
   }
   function renderStub(page) {
     const meta = {
@@ -979,6 +1238,18 @@
     if (act === 'open-session') enterBoard(a.dataset.name || state.piName);
     else if (act === 'goto') navigate(a.dataset.page);
     else if (act === 'refresh-events') renderHome();
+    // ALM Connections editor flow
+    else if (act === 'edit-conn') { connEdit = a.dataset.id; connStep = 'connection'; artEdit = null; renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'conn-step') { connStep = a.dataset.step; artEdit = null; renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'conn-back') { connEdit = null; artEdit = null; renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'edit-art') { artEdit = +a.dataset.i; artTab = 'kanban'; artSnapshot = JSON.stringify(state.arts[artEdit].kanban); renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'art-tab') { artTab = a.dataset.tab; renderConnections(); }
+    else if (act === 'art-back') { artEdit = null; renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'art-save') { save(); artEdit = null; renderConnections(); mainEl.scrollTop = 0; }
+    else if (act === 'art-discard') {
+      if (artSnapshot != null && artEdit != null) { state.arts[artEdit].kanban = JSON.parse(artSnapshot); save(); }
+      artEdit = null; renderConnections(); mainEl.scrollTop = 0;
+    }
   });
 
   // ---------- Board navigation ----------
