@@ -449,19 +449,60 @@
   }
 
   // ---------- Sticky notes ----------
-  const NOTE_COLS = 4, NOTE_W = 96, NOTE_H = 66, NOTE_GX = 12, NOTE_GY = 14;
+  const NOTE_COLS = 4, NOTE_W = 100, NOTE_H = 96, NOTE_GX = 14, NOTE_GY = 18;
+  function jiraDiamond() {
+    return '<svg class="n-jira" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12Z" fill="#2684ff"/>' +
+      '<path d="M12 7 17 12 12 17 7 12Z" fill="#fff" opacity=".5"/></svg>';
+  }
+  function stickerIcon() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
+      '<path d="M14 4a8 8 0 11-9 9"/><path d="M14 4l-1 5 5-1z"/></svg>';
+  }
+  function linkIcon() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">' +
+      '<path d="M9 12h6"/><path d="M9.5 8H8a4 4 0 000 8h1.5"/><path d="M14.5 8H16a4 4 0 010 8h-1.5"/></svg>';
+  }
+  function tbBtn(p) {
+    return '<button class="n-tb-b" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg></button>';
+  }
+  function noteToolbar() {
+    return '<div class="n-toolbar">' +
+      '<button class="n-tb-b n-tb-color" type="button" disabled></button>' +
+      tbBtn('<path d="M12 3l9 9-9 9-9-9z"/>') +
+      '<button class="n-tb-b" type="button" disabled><span class="n-tb-dot"></span></button>' +
+      tbBtn('<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/>') +
+      tbBtn('<path d="M21 7H8M21 7l-4-4M21 7l-4 4"/><path d="M3 17h13M3 17l4-4M3 17l4 4"/>') +
+      tbBtn('<rect x="4" y="4" width="11" height="11" rx="2"/><path d="M9 20h11V9"/>') +
+      tbBtn('<circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M7.7 11l8.6-4M7.7 13l8.6 4"/>') +
+      tbBtn('<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="17" y="4" width="4" height="14" rx="1"/>') +
+      tbBtn('<path d="M3 12h4l3 8 4-16 3 8h4"/>') +
+    '</div>';
+  }
   function noteHtml(c, i) {
     const h = hashCode(c.id);
     const col = i % NOTE_COLS, row = Math.floor(i / NOTE_COLS);
-    const jx = (h % 15) - 5, jy = ((h >> 4) % 13) - 5;
+    const jx = (h % 13) - 4, jy = ((h >> 4) % 11) - 4;
     const x = 6 + col * (NOTE_W + NOTE_GX) + Math.max(-4, jx);
-    const y = 4 + row * (NOTE_H + NOTE_GY) + Math.max(-3, jy);
-    const prog = 30 + (Math.abs(h) % 60);
-    const done = Math.round(prog * 0.6);
-    return '<div class="note k-' + c.kind + '" style="left:' + x + 'px;top:' + y + 'px">' +
-      '<span class="n-tab"></span>' +
-      '<div class="n-text">' + esc(c.title) + '</div>' +
-      '<div class="n-bar"><i class="n-done" style="width:' + done + '%"></i><i class="n-doing" style="width:' + (prog - done) + '%"></i></div>' +
+    const y = 6 + row * (NOTE_H + NOTE_GY) + Math.max(-3, jy);
+    const tm = team(c.teamId);
+    const almId = 'ID-' + (100 + Math.abs(h) % 900);
+    const links = state.deps.filter((d) => d.from === c.id || d.to === c.id).length;
+    const wsjf = Math.abs(h >> 5) % 21;
+    const kindLabel = (state.kinds[c.kind] && state.kinds[c.kind].label) || c.kind;
+    return '<div class="note k-' + c.kind + '" data-note="' + c.id + '" style="left:' + x + 'px;top:' + y + 'px">' +
+      '<div class="n-head">' +
+        '<span class="n-type">' + esc(kindLabel) + '</span>' +
+        '<span class="n-tr"><span class="n-alm">' + jiraDiamond() + esc(almId) + '</span>' +
+          '<span class="n-sticker">' + stickerIcon() + '</span></span>' +
+      '</div>' +
+      '<div class="n-summary">' + esc(c.title) + '</div>' +
+      '<div class="n-foot">' +
+        '<span class="n-bl"><span class="n-team">' + esc(tm ? tm.name : 'Team') + '</span>' +
+          '<span class="n-links">' + linkIcon() + ' ' + links + '</span></span>' +
+        '<span class="n-wsjf">' + wsjf + '</span>' +
+      '</div>' +
+      noteToolbar() + '<span class="n-handle"></span>' +
     '</div>';
   }
 
@@ -781,21 +822,29 @@
     const r = canvasWrap.getBoundingClientRect();
     setScale(view.scale * (1 - e.deltaY * 0.0025), e.clientX - r.left, e.clientY - r.top);
   }, { passive: false });
+  function selectNote(noteEl) {
+    canvas.querySelectorAll('.note.sel').forEach((n) => n.classList.remove('sel'));
+    if (noteEl) noteEl.classList.add('sel');
+  }
   canvasWrap.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('button, input, a, [contenteditable="true"]')) return;
-    pan = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, id: e.pointerId };
+    pan = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, id: e.pointerId, moved: false, note: e.target.closest('.note') };
     canvasWrap.classList.add('grabbing');
     try { canvasWrap.setPointerCapture(e.pointerId); } catch (_) {}
   });
   canvasWrap.addEventListener('pointermove', (e) => {
     if (!pan || e.pointerId !== pan.id) return;
+    if (Math.abs(e.clientX - pan.x) + Math.abs(e.clientY - pan.y) > 4) pan.moved = true;
     view.x = pan.vx + (e.clientX - pan.x);
     view.y = pan.vy + (e.clientY - pan.y);
     clampView(); applyView();
   });
   function endPan(e) { if (pan && e.pointerId === pan.id) { pan = null; canvasWrap.classList.remove('grabbing'); } }
-  canvasWrap.addEventListener('pointerup', endPan);
+  canvasWrap.addEventListener('pointerup', (e) => {
+    if (pan && e.pointerId === pan.id && !pan.moved) selectNote(pan.note);
+    endPan(e);
+  });
   canvasWrap.addEventListener('pointercancel', endPan);
   window.addEventListener('resize', () => {
     if (!boardScreen.hidden) renderBoardView();

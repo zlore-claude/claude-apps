@@ -146,21 +146,54 @@ body {
 .panel-b { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .note-area { position: relative; }
 
-/* sticky notes */
+/* sticky notes — anatomy: type / ALM id+sticker / summary / team+links / WSJF */
 .note {
-  position: absolute; width: 96px; min-height: 56px; padding: 7px 8px 9px; border-radius: 4px;
-  background: #fff; border: 1px solid rgba(20,30,50,.08); box-shadow: 0 2px 5px rgba(20,30,50,.10);
-  font-size: 9.5px; line-height: 1.28; color: #2c333f; overflow: hidden;
+  position: absolute; width: 100px; height: 92px; padding: 7px 8px; border-radius: 6px;
+  background: #fff; border: 1px solid rgba(20,30,50,.10); box-shadow: 0 2px 6px rgba(20,30,50,.12);
+  display: flex; flex-direction: column; color: #1b2330; overflow: visible;
 }
-.note .n-tab { position: absolute; top: 5px; left: 5px; width: 9px; height: 9px; border-radius: 2px; background: var(--nc); }
-.note .n-text { margin-top: 12px; }
-.note .n-bar { position: absolute; left: 7px; right: 7px; bottom: 5px; height: 3px; border-radius: 2px; background: #e7e9ee; display: flex; overflow: hidden; }
-.note .n-done { background: #3b82f6; }
-.note .n-doing { background: #46b16a; }
-.note.k-story { background: #e7f6ea; --nc: #46b16a; }
-.note.k-feature { background: #efe9fb; --nc: #8b6fd6; }
-.note.k-enabler { background: #e7eefb; --nc: #5b86d8; }
-.note.k-milestone { background: #ffffff; --nc: #c2c8d2; border-color: rgba(20,30,50,.14); }
+.note .n-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.note .n-type { font-size: 7.5px; font-weight: 700; color: #6a7384; letter-spacing: .02em; white-space: nowrap; }
+.note .n-tr { display: flex; align-items: center; gap: 3px; flex: 0 0 auto; }
+.note .n-alm { display: inline-flex; align-items: center; gap: 2px; font-size: 7px; font-weight: 700;
+  color: #44505f; background: rgba(20,30,50,.07); border-radius: 4px; padding: 1px 3px; white-space: nowrap; }
+.note .n-jira { width: 7px; height: 7px; }
+.note .n-sticker { width: 12px; height: 12px; border-radius: 50%; border: 1px dashed rgba(20,30,50,.32);
+  display: inline-flex; align-items: center; justify-content: center; color: #9aa1ad; flex: 0 0 auto; }
+.note .n-sticker svg { width: 7px; height: 7px; }
+.note .n-summary { flex: 1 1 auto; margin: 4px 0; font-size: 11px; font-weight: 600; line-height: 1.14;
+  color: #1b2330; overflow: hidden; }
+.note .n-foot { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.note .n-bl { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.note .n-team { font-size: 7px; color: #7b8494; border: 1px dashed rgba(20,30,50,.30); border-radius: 5px;
+  padding: 1px 5px; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note .n-links { display: none; align-items: center; gap: 2px; font-size: 7px; color: #7b8494;
+  border: 1px dashed rgba(20,30,50,.30); border-radius: 5px; padding: 1px 4px; }
+.note .n-links svg { width: 8px; height: 8px; }
+.note .n-wsjf { font-size: 8px; font-weight: 700; color: #44505f; background: rgba(20,30,50,.08);
+  border-radius: 4px; padding: 1px 5px; flex: 0 0 auto; }
+/* kind tints */
+.note.k-story { background: #e2f4e8; }
+.note.k-feature { background: #c8d3f2; }
+.note.k-enabler { background: #dbe6fb; }
+.note.k-milestone { background: #ffffff; border-color: rgba(20,30,50,.16); }
+/* selected state */
+.note .n-toolbar, .note .n-handle { display: none; }
+.note.sel { outline: 2px solid #23262d; z-index: 30; box-shadow: 0 8px 20px rgba(20,30,50,.24); }
+.note.sel .n-links { display: inline-flex; }
+.note.sel .n-toolbar { display: flex; }
+.note.sel .n-handle { display: block; }
+.note .n-toolbar { position: absolute; left: 50%; top: -23px; transform: translateX(-50%);
+  display: flex; gap: 2px; padding: 3px 4px; background: #26282e; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.32); }
+.note .n-tb-b { width: 15px; height: 15px; border: 0; background: transparent; color: #cfd3da;
+  display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 3px; }
+.note .n-tb-b svg { width: 11px; height: 11px; }
+.note .n-tb-color { background: #9db0e6; }
+.note .n-tb-dot { width: 9px; height: 9px; border-radius: 50%; background: #cfd3da; }
+.note .n-handle { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%);
+  width: 9px; height: 9px; border-radius: 50%; border: 2px solid #2563eb; background: #fff; }
+.note .n-handle::before { content: ""; position: absolute; left: 50%; top: -8px; transform: translateX(-50%);
+  width: 1px; height: 8px; background: #2563eb; }
 
 /* Team Objectives panel */
 .obj-h { display: flex; align-items: center; }
