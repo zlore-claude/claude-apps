@@ -231,6 +231,7 @@
     s.iterationWeeks = s.iterationWeeks || 2;
     s.defaultCapacity = s.defaultCapacity || 20;
     s.accent = s.accent || '#f59e0b';
+    s.noteScale = s.noteScale || 1;
     s.kinds = s.kinds || {};
     KINDS.forEach((k) => {
       s.kinds[k] = Object.assign({}, KIND_DEFAULTS[k], s.kinds[k]);
@@ -357,6 +358,13 @@
       fit: '<path d="M4 9V5a1 1 0 011-1h4M20 9V5a1 1 0 00-1-1h-4M4 15v4a1 1 0 001 1h4M20 15v4a1 1 0 01-1 1h-4"/>',
       help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 113.5 2.3c-.8.4-1 .8-1 1.7"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/>',
       snap: '<rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 6l1.5-2h3L15 6"/><circle cx="12" cy="12.5" r="3"/>',
+      // bottom action menu
+      addsticky: '<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/><path d="M9.5 13.5h5M12 11v5"/>',
+      eye: '<path d="M5 5h9l5 5v9H5z"/><path d="M14 5v5h5"/><circle cx="11.5" cy="13.5" r="2.2"/><path d="M7.5 13.5c1.2-2 6.8-2 8 0-1.2 2-6.8 2-8 0z"/>',
+      resizesticky: '<path d="M5 5h9l5 5v9H5z"/><path d="M14 5v5h5"/><path d="M8 16l5-5"/><path d="M13 11.5V8.8M13 11h2.6"/><path d="M8 13.2V16h2.6"/>',
+      cursor: '<path d="M6 4l8 16 2.2-6.6L23 11z" transform="scale(.8) translate(2 2)"/><path d="M5 4l7 17 2.3-7L21 12z"/>',
+      connector: '<rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="5" width="5" height="4.5" rx="1"/><rect x="16" y="14.5" width="5" height="4.5" rx="1"/><path d="M8 12h4M12 12V7.2h4M12 12v4.8h4"/>',
+      hand: '<path d="M8 11V6.5a1.4 1.4 0 012.8 0V11M10.8 11V5.6a1.4 1.4 0 012.8 0V11M13.6 11V6.4a1.4 1.4 0 012.8 0V13a6 6 0 01-6 6 5 5 0 01-4.2-2.3L4.6 13.4a1.4 1.4 0 012.2-1.8L8 12.6"/>',
     };
     return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (P[name] || '') + '</svg>';
   }
@@ -482,17 +490,20 @@
   }
   function noteHtml(c, i) {
     const h = hashCode(c.id);
+    const ns = state.noteScale || 1;
+    const nw = NOTE_W * ns, nh = NOTE_H * ns, gx = NOTE_GX * ns, gy = NOTE_GY * ns;
     const col = i % NOTE_COLS, row = Math.floor(i / NOTE_COLS);
-    const jx = (h % 13) - 4, jy = ((h >> 4) % 11) - 4;
+    const jx = ((h % 13) - 4) * ns, jy = (((h >> 4) % 11) - 4) * ns;
     // free position (after a drag) overrides the packed grid position
-    const x = c.fx != null ? c.fx : 6 + col * (NOTE_W + NOTE_GX) + Math.max(-4, jx);
-    const y = c.fy != null ? c.fy : 6 + row * (NOTE_H + NOTE_GY) + Math.max(-3, jy);
+    const x = c.fx != null ? c.fx : 6 * ns + col * (nw + gx) + Math.max(-4 * ns, jx);
+    const y = c.fy != null ? c.fy : 6 * ns + row * (nh + gy) + Math.max(-3 * ns, jy);
     const tm = team(c.teamId);
     const almId = 'ID-' + (100 + Math.abs(h) % 900);
     const links = state.deps.filter((d) => d.from === c.id || d.to === c.id).length;
     const wsjf = Math.abs(h >> 5) % 21;
     const kindLabel = (state.kinds[c.kind] && state.kinds[c.kind].label) || c.kind;
-    return '<div class="note k-' + c.kind + '" data-note="' + c.id + '" style="left:' + x + 'px;top:' + y + 'px">' +
+    return '<div class="note k-' + c.kind + '" data-note="' + c.id + '" style="left:' + x + 'px;top:' + y +
+      'px;width:' + nw + 'px;height:' + nh + 'px;font-size:' + (10 * ns) + 'px">' +
       '<div class="n-head">' +
         '<span class="n-type">' + esc(kindLabel) + '</span>' +
         '<span class="n-tr"><span class="n-alm">' + jiraDiamond() + esc(almId) + '</span>' +
@@ -771,13 +782,35 @@
   function renderCanvasIfVisible() { if (!boardScreen.hidden) { renderCanvas(); fitView(); } }
 
   // ---------- Zoom control ----------
+  let sizePopOpen = false; // sticky-size zoom popover
   function renderZoomCtl() {
+    const nsPct = Math.round((state.noteScale || 1) * 100);
     zoomctl.innerHTML =
-      '<button class="z-btn" type="button" data-z="fit" title="Fit board (100%)">' + bIcon('fit') + '</button>' +
-      '<button class="z-btn" type="button" data-z="out" title="Zoom out">' + bIcon('minus') + '</button>' +
-      '<span class="z-val">100%</span>' +
-      '<button class="z-btn" type="button" data-z="in" title="Zoom in">' + bIcon('plus') + '</button>' +
-      '<button class="z-btn z-help" type="button" title="Help" disabled>' + bIcon('help') + '</button>';
+      '<div class="zc-pill zc-dark"><button class="z-btn" type="button" title="Add sticky">' + bIcon('addsticky') + '</button></div>' +
+      '<div class="zc-pill">' +
+        '<button class="z-btn" type="button" title="Preview">' + bIcon('eye') + '</button>' +
+        '<button class="z-btn' + (sizePopOpen ? ' on' : '') + '" type="button" data-z="resize" title="Resize stickies">' + bIcon('resizesticky') + '</button>' +
+        '<button class="z-btn" type="button" title="Select">' + bIcon('cursor') + '</button>' +
+        '<button class="z-btn" type="button" title="Connect">' + bIcon('connector') + '</button>' +
+        '<button class="z-btn" type="button" title="Pan">' + bIcon('hand') + '</button>' +
+        '<span class="zc-div"></span>' +
+        '<button class="z-btn" type="button" data-z="out" title="Zoom out">' + bIcon('minus') + '</button>' +
+        '<button class="z-btn z-valbtn" type="button" data-z="fit" title="Fit board"><span class="z-val">100%</span></button>' +
+        '<button class="z-btn" type="button" data-z="in" title="Zoom in">' + bIcon('plus') + '</button>' +
+      '</div>' +
+      '<div class="zc-pill"><button class="z-btn z-help" type="button" title="Help">' + bIcon('help') + '</button></div>' +
+      (sizePopOpen ?
+        '<div class="zc-pop"><span class="zc-pop-t">Sticky size</span>' +
+          '<button class="z-btn" type="button" data-z="note-out" title="Smaller">' + bIcon('minus') + '</button>' +
+          '<span class="z-val">' + nsPct + '%</span>' +
+          '<button class="z-btn" type="button" data-z="note-in" title="Bigger">' + bIcon('plus') + '</button>' +
+        '</div>' : '');
+  }
+  function setNoteScale(v) {
+    state.noteScale = Math.max(0.6, Math.min(2.2, Math.round(v * 100) / 100));
+    save();
+    if (railActive === 'team') renderTeamBoard();
+    renderZoomCtl();
   }
 
   // ---------- Bounded view transform (pan + zoom) ----------
@@ -962,6 +995,9 @@
     if (z === 'in') zoomBy(1.4);
     else if (z === 'out') zoomBy(1 / 1.4);
     else if (z === 'fit') fitView();
+    else if (z === 'resize') { sizePopOpen = !sizePopOpen; renderZoomCtl(); }
+    else if (z === 'note-in') setNoteScale((state.noteScale || 1) + 0.15);
+    else if (z === 'note-out') setNoteScale((state.noteScale || 1) - 0.15);
   });
 
   function renderBoardView(preserveView) {
