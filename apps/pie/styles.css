@@ -177,22 +177,24 @@ body {
 .note.k-feature { background: #c8d3f2; }
 .note.k-enabler { background: #dbe6fb; }
 .note.k-milestone { background: #ffffff; border-color: rgba(20,30,50,.16); }
-/* selected state */
-.note .n-toolbar, .note .n-handle { display: none; }
+/* focused (clicked) state */
 .note.sel { outline: 2px solid #23262d; z-index: 30; box-shadow: 0 8px 20px rgba(20,30,50,.24); }
 .note.sel .n-links { display: inline-flex; }
-.note.sel .n-toolbar { display: flex; }
-.note.sel .n-handle { display: block; }
-.note .n-toolbar { position: absolute; left: 50%; top: -23px; transform: translateX(-50%);
+.note { cursor: grab; }
+.note.note-dragging { z-index: 50; pointer-events: none; cursor: grabbing;
+  box-shadow: 0 16px 32px rgba(20,30,50,.30); transform: rotate(1.2deg); }
+/* focus menu + connection handle live in an overlay layer (escapes panel clipping) */
+.note-overlay { position: absolute; z-index: 36; pointer-events: none; }
+.n-toolbar { position: absolute; left: 50%; top: -23px; transform: translateX(-50%); pointer-events: auto;
   display: flex; gap: 2px; padding: 3px 4px; background: #26282e; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.32); }
-.note .n-tb-b { width: 15px; height: 15px; border: 0; background: transparent; color: #cfd3da;
+.n-tb-b { width: 15px; height: 15px; border: 0; background: transparent; color: #cfd3da;
   display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 3px; }
-.note .n-tb-b svg { width: 11px; height: 11px; }
-.note .n-tb-color { background: #9db0e6; }
-.note .n-tb-dot { width: 9px; height: 9px; border-radius: 50%; background: #cfd3da; }
-.note .n-handle { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%);
+.n-tb-b svg { width: 11px; height: 11px; }
+.n-tb-color { background: #9db0e6; }
+.n-tb-dot { width: 9px; height: 9px; border-radius: 50%; background: #cfd3da; }
+.n-handle { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); pointer-events: auto;
   width: 9px; height: 9px; border-radius: 50%; border: 2px solid #2563eb; background: #fff; }
-.note .n-handle::before { content: ""; position: absolute; left: 50%; top: -8px; transform: translateX(-50%);
+.n-handle::before { content: ""; position: absolute; left: 50%; top: -8px; transform: translateX(-50%);
   width: 1px; height: 8px; background: #2563eb; }
 
 /* Team Objectives panel */

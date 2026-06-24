@@ -483,8 +483,9 @@
     const h = hashCode(c.id);
     const col = i % NOTE_COLS, row = Math.floor(i / NOTE_COLS);
     const jx = (h % 13) - 4, jy = ((h >> 4) % 11) - 4;
-    const x = 6 + col * (NOTE_W + NOTE_GX) + Math.max(-4, jx);
-    const y = 6 + row * (NOTE_H + NOTE_GY) + Math.max(-3, jy);
+    // free position (after a drag) overrides the packed grid position
+    const x = c.fx != null ? c.fx : 6 + col * (NOTE_W + NOTE_GX) + Math.max(-4, jx);
+    const y = c.fy != null ? c.fy : 6 + row * (NOTE_H + NOTE_GY) + Math.max(-3, jy);
     const tm = team(c.teamId);
     const almId = 'ID-' + (100 + Math.abs(h) % 900);
     const links = state.deps.filter((d) => d.from === c.id || d.to === c.id).length;
@@ -502,7 +503,6 @@
           '<span class="n-links">' + linkIcon() + ' ' + links + '</span></span>' +
         '<span class="n-wsjf">' + wsjf + '</span>' +
       '</div>' +
-      noteToolbar() + '<span class="n-handle"></span>' +
     '</div>';
   }
 
@@ -522,7 +522,7 @@
           '<button class="ph-ico2" type="button" title="More" disabled>' + bIcon('dots') + '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="panel-b note-area">' + notes + '</div>';
+      '<div class="panel-b note-area" data-sprint="' + idx + '">' + notes + '</div>';
   }
   function objPanel() {
     const committed = state.objectives.filter((o) => o.committed);
@@ -568,6 +568,7 @@
   };
   function renderCanvas() {
     measureInsets();
+    selNote = null; // canvas innerHTML is rebuilt below; drop any stale selection
     if (railActive === 'objectives') return renderObjectivesBoard();
     if (railActive === 'artbacklog') return renderArtKanban();
     if (railActive === 'team') return renderTeamBoard();
@@ -822,30 +823,98 @@
     const r = canvasWrap.getBoundingClientRect();
     setScale(view.scale * (1 - e.deltaY * 0.0025), e.clientX - r.left, e.clientY - r.top);
   }, { passive: false });
+  // ---------- Sticky note selection (focus) + drag-to-move ----------
+  let selNote = null;
+  let drag = null;
+  function clearSelection() {
+    if (selNote) selNote.classList.remove('sel');
+    selNote = null;
+    const o = canvas.querySelector('.note-overlay');
+    if (o) o.remove();
+  }
   function selectNote(noteEl) {
-    canvas.querySelectorAll('.note.sel').forEach((n) => n.classList.remove('sel'));
-    if (noteEl) noteEl.classList.add('sel');
+    clearSelection();
+    if (!noteEl) return;
+    selNote = noteEl; noteEl.classList.add('sel');
+    // Render the focus menu + handle in a layer attached to the canvas so it
+    // escapes the panels' overflow:hidden clipping; it scales/pans with the board.
+    const cr = canvas.getBoundingClientRect(), nr = noteEl.getBoundingClientRect();
+    const s = view.scale || 1;
+    const ov = el('div', { class: 'note-overlay' });
+    ov.style.left = ((nr.left - cr.left) / s) + 'px';
+    ov.style.top = ((nr.top - cr.top) / s) + 'px';
+    ov.style.width = (nr.width / s) + 'px';
+    ov.style.height = (nr.height / s) + 'px';
+    ov.innerHTML = noteToolbar() + '<span class="n-handle"></span>';
+    canvas.appendChild(ov);
   }
   canvasWrap.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('button, input, a, [contenteditable="true"]')) return;
-    pan = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, id: e.pointerId, moved: false, note: e.target.closest('.note') };
+    if (e.target.closest('.note-overlay')) return; // interacting with the focus menu
+    const noteEl = railActive === 'team' ? e.target.closest('.note') : null;
+    if (noteEl) {
+      clearSelection();
+      const cr = canvas.getBoundingClientRect(), nr = noteEl.getBoundingClientRect();
+      const s = view.scale || 1;
+      drag = { el: noteEl, id: noteEl.dataset.note, sx: e.clientX, sy: e.clientY,
+        startLeft: (nr.left - cr.left) / s, startTop: (nr.top - cr.top) / s, moved: false, id2: e.pointerId };
+      canvasWrap.classList.add('grabbing');
+      try { canvasWrap.setPointerCapture(e.pointerId); } catch (_) {}
+      return;
+    }
+    pan = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, id: e.pointerId, moved: false };
     canvasWrap.classList.add('grabbing');
     try { canvasWrap.setPointerCapture(e.pointerId); } catch (_) {}
   });
   canvasWrap.addEventListener('pointermove', (e) => {
+    if (drag && e.pointerId === drag.id2) {
+      const s = view.scale || 1;
+      if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) {
+        drag.moved = true; // lift out of the panel into the (unclipped) canvas layer
+        drag.el.classList.add('note-dragging');
+        canvas.appendChild(drag.el);
+      }
+      if (drag.moved) {
+        drag.el.style.left = (drag.startLeft + (e.clientX - drag.sx) / s) + 'px';
+        drag.el.style.top = (drag.startTop + (e.clientY - drag.sy) / s) + 'px';
+      }
+      return;
+    }
     if (!pan || e.pointerId !== pan.id) return;
     if (Math.abs(e.clientX - pan.x) + Math.abs(e.clientY - pan.y) > 4) pan.moved = true;
     view.x = pan.vx + (e.clientX - pan.x);
     view.y = pan.vy + (e.clientY - pan.y);
     clampView(); applyView();
   });
+  function finishDrag(e) {
+    const d = drag; drag = null; canvasWrap.classList.remove('grabbing');
+    if (!d.moved) { selectNote(d.el); return; } // clean click = focus
+    // the dragged note has pointer-events:none, so this finds the panel beneath
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const area = under && under.closest('.note-area[data-sprint]');
+    const c = card(d.id);
+    if (c && area) {
+      const ar = area.getBoundingClientRect();
+      const s = view.scale || 1;
+      c.sprintIdx = +area.dataset.sprint;
+      c.fx = Math.max(2, (e.clientX - ar.left) / s - NOTE_W / 2);
+      c.fy = Math.max(2, (e.clientY - ar.top) / s - NOTE_H / 2);
+      save();
+    }
+    clearSelection();
+    renderTeamBoard(); // reflow; dropping outside a panel just snaps it back
+  }
   function endPan(e) { if (pan && e.pointerId === pan.id) { pan = null; canvasWrap.classList.remove('grabbing'); } }
   canvasWrap.addEventListener('pointerup', (e) => {
-    if (pan && e.pointerId === pan.id && !pan.moved) selectNote(pan.note);
+    if (drag && e.pointerId === drag.id2) { finishDrag(e); return; }
+    if (pan && e.pointerId === pan.id && !pan.moved) selectNote(null); // click empty = deselect
     endPan(e);
   });
-  canvasWrap.addEventListener('pointercancel', endPan);
+  canvasWrap.addEventListener('pointercancel', (e) => {
+    if (drag && e.pointerId === drag.id2) { const m = drag.moved; drag = null; canvasWrap.classList.remove('grabbing'); if (m) renderTeamBoard(); return; }
+    endPan(e);
+  });
   window.addEventListener('resize', () => {
     if (!boardScreen.hidden) renderBoardView();
   });
