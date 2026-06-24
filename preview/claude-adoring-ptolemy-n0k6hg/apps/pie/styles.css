@@ -43,6 +43,7 @@ body {
   background: #eef0f4; color: #1b1f27;
   font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
   --r-line: #e6e8ee; --r-dim: #5f6775; --r-faint: #9aa1ad;
+  -webkit-user-select: none; user-select: none;
 }
 
 /* canvas viewport (pannable / zoomable) — sits below the static top nav */
