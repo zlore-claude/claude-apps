@@ -449,14 +449,15 @@
   }
 
   // ---------- Sticky notes ----------
-  const NOTE_COLS = 4, NOTE_W = 100, NOTE_H = 96, NOTE_GX = 14, NOTE_GY = 18;
+  const NOTE_COLS = 4, NOTE_W = 106, NOTE_H = 106, NOTE_GX = 16, NOTE_GY = 18;
   function jiraDiamond() {
-    return '<svg class="n-jira" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12Z" fill="#2684ff"/>' +
-      '<path d="M12 7 17 12 12 17 7 12Z" fill="#fff" opacity=".5"/></svg>';
+    return '<svg class="n-jira" viewBox="0 0 24 24">' +
+      '<path d="M12 2 22 12 12 22 2 12Z" fill="#41464e"/>' +
+      '<path d="M12 7 17 12 12 17 7 12Z" fill="#5d636d"/></svg>';
   }
   function stickerIcon() {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
-      '<path d="M14 4a8 8 0 11-9 9"/><path d="M14 4l-1 5 5-1z"/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M14 4H7a3 3 0 00-3 3v10a3 3 0 003 3h6l7-7V7"/><path d="M13 20v-5a2 2 0 012-2h5"/></svg>';
   }
   function linkIcon() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">' +
