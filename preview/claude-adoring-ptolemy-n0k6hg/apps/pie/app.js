@@ -473,6 +473,20 @@
     return '<svg class="n-warn" viewBox="0 0 24 24"><path d="M12 3.4l9.6 16.6H2.4z" fill="#d64545"/>' +
       '<rect x="11" y="9" width="2" height="5.4" rx="1" fill="#fff"/><circle cx="12" cy="17" r="1.2" fill="#fff"/></svg>';
   }
+  function okCheck() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="#2f9e5f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6 5.2-5.2"/></svg>';
+  }
+  // Plausible Jira sync failure reasons (deterministic per sticky).
+  const SYNC_ERRORS = [
+    'Jira rejected the update: field “Story Points” is required to transition to “In Progress”.',
+    'You don’t have permission to edit this issue in Jira.',
+    'The linked Jira issue was deleted or moved to another project.',
+    'The “Sprint” field isn’t on this issue’s screen, so the iteration couldn’t be written back.',
+    'Jira rate-limited the request (HTTP 429). It will retry automatically.',
+    'Version conflict: the issue changed in Jira since the last sync.',
+  ];
+  const SYNC_SOURCES = ['platform-jira', 'rentouch-dev', 'piplanning.atlassian.net'];
   function linkIcon() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">' +
       '<path d="M9 12h6"/><path d="M9.5 8H8a4 4 0 000 8h1.5"/><path d="M14.5 8H16a4 4 0 010 8h-1.5"/></svg>';
@@ -590,6 +604,7 @@
   function renderCanvas() {
     measureInsets();
     selNote = null; // canvas innerHTML is rebuilt below; drop any stale selection
+    closeNotePop();
     if (railActive === 'objectives') return renderObjectivesBoard();
     if (railActive === 'artbacklog') return renderArtKanban();
     if (railActive === 'team') return renderTeamBoard();
@@ -863,6 +878,7 @@
 
   canvasWrap.addEventListener('wheel', (e) => {
     e.preventDefault();
+    closeNotePop();
     const r = canvasWrap.getBoundingClientRect();
     setScale(view.scale * (1 - e.deltaY * 0.0025), e.clientX - r.left, e.clientY - r.top);
   }, { passive: false });
@@ -895,6 +911,7 @@
     if (e.button !== 0) return;
     if (e.target.closest('button, input, a, [contenteditable="true"]')) return;
     if (e.target.closest('.note-overlay')) return; // interacting with the focus menu
+    closeNotePop();
     const noteEl = railActive === 'team' ? e.target.closest('.note') : null;
     if (noteEl) {
       clearSelection();
@@ -958,12 +975,53 @@
     if (drag && e.pointerId === drag.id2) { const m = drag.moved; drag = null; canvasWrap.classList.remove('grabbing'); if (m) renderTeamBoard(); return; }
     endPan(e);
   });
-  // Clicking the ALM id chip toggles its Jira sync status (simulates a retry).
+  // Clicking the ALM id chip opens a popover explaining the Jira sync status.
   canvasWrap.addEventListener('click', (e) => {
     const b = e.target.closest('[data-sync]'); if (!b) return;
     const c = card(b.dataset.sync); if (!c) return;
-    c.syncState = c.syncState === 'failed' ? 'synced' : 'failed';
-    save(); renderTeamBoard();
+    if (notePopEl && notePopEl.dataset.for === c.id) { closeNotePop(); return; }
+    openNotePop(c, b);
+  });
+
+  // ---------- Sticky sync popover ----------
+  let notePopEl = null;
+  function closeNotePop() { if (notePopEl) { notePopEl.remove(); notePopEl = null; } }
+  function openNotePop(c, anchor) {
+    closeNotePop();
+    const failed = c.syncState === 'failed';
+    const h = Math.abs(hashCode(c.id));
+    const almId = 'ID-' + (100 + h % 900);
+    const src = SYNC_SOURCES[h % SYNC_SOURCES.length];
+    const mins = (h % 55) + 2;
+    const pop = el('div', { class: 'note-pop' + (failed ? ' err' : '') });
+    pop.dataset.for = c.id;
+    pop.innerHTML =
+      '<div class="np-head">' + (failed ? warnIcon() : okCheck()) +
+        '<b>' + (failed ? 'Sync failed' : 'Synced with Jira') + '</b>' +
+        '<span class="np-id">' + jiraDiamond() + esc(almId) + '</span></div>' +
+      '<div class="np-reason' + (failed ? '' : ' np-ok') + '">' +
+        (failed ? esc(SYNC_ERRORS[h % SYNC_ERRORS.length]) : 'All changes are up to date in Jira.') + '</div>' +
+      '<div class="np-meta">' + (failed ? 'Last attempt ' : 'Last synced ') + mins + ' min ago · ' + esc(src) + '</div>' +
+      '<div class="np-actions"></div>';
+    const actions = pop.querySelector('.np-actions');
+    if (failed) {
+      actions.appendChild(el('button', { class: 'np-btn primary', type: 'button', text: 'Retry sync',
+        onclick: () => { c.syncState = 'synced'; save(); closeNotePop(); renderTeamBoard(); } }));
+    }
+    actions.appendChild(el('button', { class: 'np-btn', type: 'button', text: 'Open in Jira', disabled: 'disabled' }));
+    boardScreen.appendChild(pop);
+    // position under the chip, flipping/clamping to stay on-screen
+    const ar = anchor.getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let left = Math.min(ar.left, window.innerWidth - 8 - pw);
+    let top = ar.bottom + 6;
+    if (top + ph > window.innerHeight - 8) top = ar.top - 6 - ph;
+    pop.style.left = Math.max(8, left) + 'px';
+    pop.style.top = Math.max(8, top) + 'px';
+    notePopEl = pop;
+  }
+  document.addEventListener('click', (e) => {
+    if (notePopEl && !e.target.closest('.note-pop') && !e.target.closest('[data-sync]')) closeNotePop();
   });
   window.addEventListener('resize', () => {
     if (!boardScreen.hidden) renderBoardView();
@@ -1579,7 +1637,7 @@
 
   // ---------- Global ----------
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeUserMenu(); if (artMenuOpen) { artMenuOpen = false; renderTopNav(); } }
+    if (e.key === 'Escape') { closeUserMenu(); closeNotePop(); if (artMenuOpen) { artMenuOpen = false; renderTopNav(); } }
   });
 
   function fullRender() {

@@ -986,3 +986,28 @@ body {
 .kb-src b { color: #1b1f27; }
 .kb-warn { color: #b06a12; }
 .kb-sheet .kb-board { flex: 1 1 auto; }
+
+/* ---------- Sticky Jira sync popover ---------- */
+.note-pop {
+  position: absolute; z-index: 70; width: 252px; box-sizing: border-box;
+  background: #fff; border: 1px solid var(--r-line); border-radius: 12px;
+  box-shadow: 0 16px 42px rgba(20,30,50,.24); padding: 12px 13px;
+  font: 13px/1.4 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: #1b2330; -webkit-user-select: text; user-select: text;
+}
+.note-pop .np-head { display: flex; align-items: center; gap: 7px; }
+.note-pop .np-head svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.note-pop .np-head b { font-size: 13.5px; font-weight: 800; }
+.note-pop.err .np-head b { color: #b3261e; }
+.note-pop .np-id { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px;
+  font-weight: 700; color: #5c6473; background: var(--r-soft); border-radius: 6px; padding: 2px 7px; }
+.note-pop .np-id svg { width: 12px; height: 12px; }
+.note-pop .np-reason { margin-top: 9px; font-size: 12.5px; color: #44505f; }
+.note-pop .np-reason.np-ok { color: #2f8355; }
+.note-pop .np-meta { margin-top: 9px; font-size: 11.5px; color: var(--r-faint); }
+.note-pop .np-actions { margin-top: 12px; display: flex; gap: 7px; }
+.note-pop .np-btn { font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--r-line); background: #fff; color: #1b2330; cursor: pointer; }
+.note-pop .np-btn:hover { border-color: #cdd2db; }
+.note-pop .np-btn.primary { background: #e5484d; border-color: transparent; color: #fff; }
+.note-pop .np-btn.primary:hover { filter: brightness(1.05); }
