@@ -1008,7 +1008,7 @@
       actions.appendChild(el('button', { class: 'np-btn primary', type: 'button', text: 'Retry sync',
         onclick: () => { c.syncState = 'synced'; save(); closeNotePop(); renderTeamBoard(); } }));
     }
-    actions.appendChild(el('button', { class: 'np-btn', type: 'button', text: 'Open in Jira', disabled: 'disabled' }));
+    actions.appendChild(el('button', { class: 'np-btn', type: 'button', text: 'Show Log', disabled: 'disabled' }));
     boardScreen.appendChild(pop);
     // position under the chip, flipping/clamping to stay on-screen
     const ar = anchor.getBoundingClientRect();
