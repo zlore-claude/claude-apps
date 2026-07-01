@@ -354,49 +354,100 @@ a {
   margin-left: -12px;
 }
 
-/* Case studies */
+/* Case studies — folder shape with project thumbnails tucked in the tab */
 
 .tile-cases {
-  overflow: visible;
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  aspect-ratio: 250 / 222;
+  min-height: 0;
 }
 
-.case-stack {
+.folder-shape {
   position: absolute;
-  top: -26px;
-  left: 22px;
-  right: 22px;
-  height: 120px;
-  pointer-events: none;
-}
-
-.case-stack .card {
-  position: absolute;
-  width: 62%;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  border-radius: 16px;
-  background: linear-gradient(160deg, #2a2a2d, #111113);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
-}
-
-.case-stack .c1 {
-  left: 0;
-  transform: rotate(-8deg);
-  z-index: 1;
-}
-
-.case-stack .c2 {
-  left: 19%;
-  transform: rotate(-2deg);
   z-index: 2;
 }
 
-.case-stack .c3 {
-  left: 38%;
+.folder-fill {
+  fill: var(--card);
+  transition: fill 0.25s ease;
+}
+
+.folder-stroke {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.25s ease;
+}
+
+.tile-cases:hover .folder-fill {
+  fill: var(--card-hover);
+}
+
+.tile-cases:hover .folder-stroke {
+  stroke: rgba(255, 255, 255, 0.28);
+}
+
+.case-photos {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.case-photo {
+  position: absolute;
+  border-radius: 12%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.45);
+}
+
+.case-photo.p1 {
+  left: 1.6%;
+  top: 3.6%;
+  width: 38%;
+  height: 45.05%;
+  transform: rotate(-7deg);
+  background: linear-gradient(155deg, #123534 0%, #05100f 70%);
+}
+
+.case-photo.p2 {
+  left: 18.4%;
+  top: 7.2%;
+  width: 38%;
+  height: 44.1%;
   transform: rotate(6deg);
+  background: linear-gradient(155deg, #4a1533 0%, #180810 70%);
+}
+
+.case-photo.p3 {
+  left: 35.2%;
+  top: 11.7%;
+  width: 31.2%;
+  height: 39.6%;
+  transform: rotate(-5deg);
+  background: linear-gradient(155deg, #143a2c 0%, #06120e 70%);
+}
+
+.case-photo.p4 {
+  left: 47.2%;
+  top: 14.4%;
+  width: 31.2%;
+  height: 38.7%;
+  transform: rotate(9deg);
+  background: linear-gradient(155deg, #163a52 0%, #071420 70%);
+}
+
+.tile-cases .tile-label {
+  position: absolute;
+  left: 22px;
+  bottom: 20px;
   z-index: 3;
-  background: linear-gradient(160deg, #ff5a4d, #c62a20);
-  border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Careers */
