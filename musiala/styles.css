@@ -410,34 +410,34 @@ a {
 .case-photo.p1 {
   left: 1.6%;
   top: 3.6%;
-  width: 38%;
+  width: 39.2%;
   height: 45.05%;
   transform: rotate(-7deg);
   background: linear-gradient(155deg, #123534 0%, #05100f 70%);
 }
 
 .case-photo.p2 {
-  left: 18.4%;
+  left: 19.2%;
   top: 7.2%;
-  width: 38%;
+  width: 39.2%;
   height: 44.1%;
   transform: rotate(6deg);
   background: linear-gradient(155deg, #4a1533 0%, #180810 70%);
 }
 
 .case-photo.p3 {
-  left: 35.2%;
+  left: 36.8%;
   top: 11.7%;
-  width: 31.2%;
+  width: 32%;
   height: 39.6%;
   transform: rotate(-5deg);
   background: linear-gradient(155deg, #143a2c 0%, #06120e 70%);
 }
 
 .case-photo.p4 {
-  left: 47.2%;
+  left: 48.8%;
   top: 14.4%;
-  width: 31.2%;
+  width: 32%;
   height: 38.7%;
   transform: rotate(9deg);
   background: linear-gradient(155deg, #163a52 0%, #071420 70%);
@@ -445,8 +445,8 @@ a {
 
 .tile-cases .tile-label {
   position: absolute;
-  left: 22px;
-  bottom: 20px;
+  left: 30px;
+  bottom: 30px;
   z-index: 3;
 }
 
