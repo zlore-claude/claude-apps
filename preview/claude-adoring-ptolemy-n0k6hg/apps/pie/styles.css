@@ -159,7 +159,12 @@ body {
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .note .n-tr { display: flex; align-items: center; gap: .45em; flex: 0 0 auto; }
 .note .n-alm { display: inline-flex; align-items: center; gap: .35em; font-size: .74em; font-weight: 700;
-  color: #2c313a; background: rgba(58,66,88,.22); border-radius: .9em; padding: .3em .6em; white-space: nowrap; }
+  color: #2c313a; background: rgba(58,66,88,.22); border: 0; border-radius: .9em; padding: .3em .6em;
+  white-space: nowrap; font-family: inherit; cursor: pointer; }
+.note .n-alm:hover { background: rgba(58,66,88,.3); }
+.note .n-alm--err { background: rgba(214,69,69,.18); color: #b3261e; }
+.note .n-alm--err:hover { background: rgba(214,69,69,.26); }
+.note .n-warn { width: 1.2em; height: 1.2em; }
 .note .n-jira { width: 1.15em; height: 1.15em; }
 .note .n-sticker { width: 1.55em; height: 1.55em; border-radius: 50%; border: 1px dashed rgba(58,66,88,.42);
   display: inline-flex; align-items: center; justify-content: center; color: #7b8498; flex: 0 0 auto; }
@@ -178,6 +183,8 @@ body {
 /* kind tints */
 .note.k-story { background: #d6eede; }
 .note.k-feature { background: #c3cdec; }
+/* Jira sync failed — red left edge so it reads even when zoomed out */
+.note.sync-err { box-shadow: inset .3em 0 0 #e5484d, 0 1px 2px rgba(20,30,50,.10); }
 .note.k-enabler { background: #cfe0fb; }
 .note.k-milestone { background: #f4f5f8; }
 /* focused (clicked) state */

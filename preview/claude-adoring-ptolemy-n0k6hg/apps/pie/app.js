@@ -237,6 +237,8 @@
       s.kinds[k] = Object.assign({}, KIND_DEFAULTS[k], s.kinds[k]);
     });
     if (!Array.isArray(s.objectives)) s.objectives = [];
+    // Jira sync status per sticky (simulate a few failures for the demo).
+    (s.cards || []).forEach((c) => { if (!c.syncState) c.syncState = (Math.abs(hashCode(c.id)) % 6 === 0) ? 'failed' : 'synced'; });
     s.teams.forEach((tm, i) => { if (!Array.isArray(tm.objectives)) tm.objectives = genTeamObjectives(i); });
     if (!Array.isArray(s.artObjectives)) s.artObjectives = genArtObjectives();
     if (!Array.isArray(s.arts) || !s.arts.length || s.artsV !== ARTS_V) { s.arts = genArts(); s.artsV = ARTS_V; }
@@ -467,6 +469,10 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
       '<path d="M14 4H7a3 3 0 00-3 3v10a3 3 0 003 3h6l7-7V7"/><path d="M13 20v-5a2 2 0 012-2h5"/></svg>';
   }
+  function warnIcon() {
+    return '<svg class="n-warn" viewBox="0 0 24 24"><path d="M12 3.4l9.6 16.6H2.4z" fill="#d64545"/>' +
+      '<rect x="11" y="9" width="2" height="5.4" rx="1" fill="#fff"/><circle cx="12" cy="17" r="1.2" fill="#fff"/></svg>';
+  }
   function linkIcon() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">' +
       '<path d="M9 12h6"/><path d="M9.5 8H8a4 4 0 000 8h1.5"/><path d="M14.5 8H16a4 4 0 010 8h-1.5"/></svg>';
@@ -502,11 +508,14 @@
     const links = state.deps.filter((d) => d.from === c.id || d.to === c.id).length;
     const wsjf = Math.abs(h >> 5) % 21;
     const kindLabel = (state.kinds[c.kind] && state.kinds[c.kind].label) || c.kind;
-    return '<div class="note k-' + c.kind + '" data-note="' + c.id + '" style="left:' + x + 'px;top:' + y +
+    const failed = c.syncState === 'failed';
+    const almTitle = failed ? 'Jira sync failed — click to retry' : 'Synced with Jira';
+    return '<div class="note k-' + c.kind + (failed ? ' sync-err' : '') + '" data-note="' + c.id + '" style="left:' + x + 'px;top:' + y +
       'px;width:' + nw + 'px;height:' + nh + 'px;font-size:' + (10 * ns) + 'px">' +
       '<div class="n-head">' +
         '<span class="n-type">' + esc(kindLabel) + '</span>' +
-        '<span class="n-tr"><span class="n-alm">' + jiraDiamond() + esc(almId) + '</span>' +
+        '<span class="n-tr"><button class="n-alm' + (failed ? ' n-alm--err' : '') + '" type="button" data-sync="' + c.id + '" title="' + almTitle + '">' +
+          (failed ? warnIcon() : jiraDiamond()) + esc(almId) + '</button>' +
           '<span class="n-sticker">' + stickerIcon() + '</span></span>' +
       '</div>' +
       '<div class="n-summary">' + esc(c.title) + '</div>' +
@@ -948,6 +957,13 @@
   canvasWrap.addEventListener('pointercancel', (e) => {
     if (drag && e.pointerId === drag.id2) { const m = drag.moved; drag = null; canvasWrap.classList.remove('grabbing'); if (m) renderTeamBoard(); return; }
     endPan(e);
+  });
+  // Clicking the ALM id chip toggles its Jira sync status (simulates a retry).
+  canvasWrap.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sync]'); if (!b) return;
+    const c = card(b.dataset.sync); if (!c) return;
+    c.syncState = c.syncState === 'failed' ? 'synced' : 'failed';
+    save(); renderTeamBoard();
   });
   window.addEventListener('resize', () => {
     if (!boardScreen.hidden) renderBoardView();
