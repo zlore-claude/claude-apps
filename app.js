@@ -44,6 +44,14 @@
       url: 'apps/pie/',
     },
     {
+      slug: 'docsmith',
+      name: 'Docsmith',
+      meta: 'AI Writer',
+      tagline: 'Drop a screenshot, get polished documentation.',
+      icon: '📘',
+      url: 'apps/docsmith/',
+    },
+    {
       slug: 'directions',
       name: 'Directions',
       meta: 'Coming soon',

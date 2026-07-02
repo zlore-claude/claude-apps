@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docsmith</title>
+  <script>
+    if (window.self !== window.top) document.documentElement.classList.add('embedded');
+  </script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #fafafa; color: #18181b;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #app-loading {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #fafafa;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 22px;
+      transition: opacity 0.4s ease;
+    }
+    #app-loading.hidden { opacity: 0; pointer-events: none; }
+    #app-loading .gl-icon { font-size: 88px; line-height: 1; }
+    #app-loading .gl-bar {
+      position: relative; width: 180px; height: 4px; border-radius: 2px;
+      background: rgba(24,24,27,0.08); overflow: hidden;
+    }
+    #app-loading .gl-bar::after {
+      content: ""; position: absolute; top: 0; left: -40%;
+      width: 40%; height: 100%; background: #18181b; border-radius: 2px;
+      animation: gl-bar 1.2s cubic-bezier(0.45,0,0.55,1) infinite;
+    }
+    @keyframes gl-bar { 0% { left: -40%; } 100% { left: 100%; } }
+  </style>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app-loading">
+    <span class="gl-icon" aria-hidden="true">📘</span>
+    <div class="gl-bar" aria-label="Loading"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">📘</span>
+      <span class="brand-name">Docsmith</span>
+      <span class="brand-sub">screenshots in, documentation out</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="key-btn" type="button" class="btn ghost small">API key</button>
+      <button id="quit-btn" type="button" class="btn ghost small">Quit</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="pane input-pane" aria-label="Input">
+      <div class="pane-head">
+        <h2>Describe it</h2>
+        <p>Add screenshots and explain what they show.</p>
+      </div>
+
+      <div id="dropzone" class="dropzone" tabindex="0" role="button"
+           aria-label="Add screenshots">
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+        </svg>
+        <p class="dz-title">Drop screenshots here</p>
+        <p class="dz-hint">or click to browse &middot; you can also paste from the clipboard</p>
+        <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+      </div>
+      <ul id="thumbs" class="thumbs" hidden></ul>
+
+      <label class="field">
+        <span class="field-label">What should the documentation explain?</span>
+        <textarea id="notes" rows="6"
+          placeholder="e.g. This is our new export dialog. Users pick a format, choose a date range, then click Export. The CSV option includes archived rows. Mention that exports over 10k rows are emailed instead."></textarea>
+      </label>
+
+      <div class="field">
+        <span class="field-label">Document type</span>
+        <div id="doc-types" class="chips" role="radiogroup" aria-label="Document type">
+          <button type="button" class="chip active" data-type="user-guide">User guide</button>
+          <button type="button" class="chip" data-type="tutorial">Step-by-step tutorial</button>
+          <button type="button" class="chip" data-type="feature-overview">Feature overview</button>
+          <button type="button" class="chip" data-type="release-notes">Release notes</button>
+        </div>
+      </div>
+
+      <button id="generate-btn" type="button" class="btn primary big">Generate documentation</button>
+      <p id="input-error" class="error" hidden></p>
+    </section>
+
+    <section class="pane output-pane" aria-label="Document">
+      <div class="output-toolbar">
+        <span id="status" class="status">No document yet</span>
+        <div class="toolbar-btns">
+          <button id="copy-btn" type="button" class="btn ghost small" disabled>Copy Markdown</button>
+          <button id="download-btn" type="button" class="btn ghost small" disabled>Download .md</button>
+          <button id="pdf-btn" type="button" class="btn ghost small" disabled>Export PDF</button>
+        </div>
+      </div>
+      <div id="doc-scroll" class="doc-scroll">
+        <div id="empty-state" class="empty-state">
+          <p class="es-icon" aria-hidden="true">🪶</p>
+          <p>Your document will appear here as it&rsquo;s written.</p>
+        </div>
+        <article id="doc" class="doc" hidden></article>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="key-dialog" class="key-dialog">
+    <form method="dialog">
+      <h3>Anthropic API key</h3>
+      <p class="kd-note">
+        Docsmith calls the Claude API directly from your browser. Your key is stored
+        only in this browser (localStorage) and sent only to api.anthropic.com.
+      </p>
+      <input id="key-input" type="password" placeholder="sk-ant-..." autocomplete="off" />
+      <div class="kd-actions">
+        <button type="button" id="key-clear" class="btn ghost small">Clear</button>
+        <button value="save" id="key-save" class="btn primary small">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
