@@ -17,10 +17,49 @@
   const keyDialog = document.getElementById('key-dialog');
   const keyInput = document.getElementById('key-input');
 
-  const KEY_STORAGE = 'docsmith-api-key';
-  const MODEL = 'claude-opus-4-8';
+  const PROVIDER_STORAGE = 'docsmith-provider';
+  const LEGACY_KEY_STORAGE = 'docsmith-api-key'; // pre-multi-provider Anthropic key
   const MAX_IMAGES = 6;
-  const MAX_EDGE = 2576; // model's max useful resolution
+  const MAX_EDGE = 2576; // max useful image resolution across providers
+
+  const PROVIDERS = {
+    anthropic: {
+      name: 'Claude',
+      model: 'claude-opus-4-8',
+      host: 'api.anthropic.com',
+      hint: 'sk-ant-...',
+      note: 'Uses Claude (claude-opus-4-8) — the highest quality option. Create a key at ' +
+        '<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. ' +
+        'No subscription needed: pay-as-you-go credits, $5 minimum.',
+    },
+    google: {
+      name: 'Gemini',
+      model: 'gemini-2.5-flash',
+      host: 'generativelanguage.googleapis.com',
+      hint: 'AIza...',
+      note: 'Uses Gemini (gemini-2.5-flash). Create a <strong>free</strong> key at ' +
+        '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a> — ' +
+        'the free tier is enough for this app, no billing required.',
+    },
+    openai: {
+      name: 'OpenAI',
+      model: 'gpt-4o',
+      host: 'api.openai.com',
+      hint: 'sk-...',
+      note: 'Uses GPT-4o. Create a key at ' +
+        '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> ' +
+        '(prepaid credits required).',
+    },
+  };
+
+  function loadProvider() {
+    try {
+      const p = localStorage.getItem(PROVIDER_STORAGE);
+      return PROVIDERS[p] ? p : 'anthropic';
+    } catch (e) { return 'anthropic'; }
+  }
+
+  let provider = loadProvider();
 
   // { dataUrl, mediaType, b64 }
   let images = [];
@@ -57,21 +96,49 @@
     '- Write in second person ("you"), present tense, plain language.\n' +
     '- Output ONLY the Markdown document. No preamble, no closing remarks, and do not wrap the document in a code fence.';
 
-  /* ---------- API key ---------- */
+  /* ---------- Provider & API key ---------- */
+
+  const providersEl = document.getElementById('providers');
+  const kdNote = document.getElementById('kd-note');
+  const keyBtn = document.getElementById('key-btn');
 
   function getKey() {
-    try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { return ''; }
+    try {
+      return localStorage.getItem('docsmith-key-' + provider) ||
+        (provider === 'anthropic' ? localStorage.getItem(LEGACY_KEY_STORAGE) : '') || '';
+    } catch (e) { return ''; }
   }
 
   function setKey(v) {
     try {
-      if (v) localStorage.setItem(KEY_STORAGE, v);
-      else localStorage.removeItem(KEY_STORAGE);
+      if (v) localStorage.setItem('docsmith-key-' + provider, v);
+      else localStorage.removeItem('docsmith-key-' + provider);
+      if (provider === 'anthropic' && !v) localStorage.removeItem(LEGACY_KEY_STORAGE);
     } catch (e) { /* private mode — key just won't persist */ }
   }
 
-  document.getElementById('key-btn').addEventListener('click', () => {
+  function setProvider(p) {
+    provider = p;
+    try { localStorage.setItem(PROVIDER_STORAGE, p); } catch (e) { /* ignore */ }
+    const info = PROVIDERS[p];
+    providersEl.querySelectorAll('.chip').forEach((c) => {
+      c.classList.toggle('active', c.dataset.provider === p);
+    });
+    // Static app-owned strings only — nothing user-supplied goes through here.
+    kdNote.innerHTML = info.note +
+      ' Your key is stored only in this browser and sent only to ' + info.host + '.';
+    keyInput.placeholder = info.hint;
     keyInput.value = getKey();
+    keyBtn.textContent = 'API key · ' + info.name;
+  }
+
+  providersEl.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (chip) setProvider(chip.dataset.provider);
+  });
+
+  keyBtn.addEventListener('click', () => {
+    setProvider(provider);
     keyDialog.showModal();
   });
 
@@ -83,6 +150,8 @@
     keyInput.value = '';
     setKey('');
   });
+
+  setProvider(provider);
 
   /* ---------- Image intake ---------- */
 
@@ -395,39 +464,92 @@
 
   /* ---------- Generation ---------- */
 
-  function buildRequestBody() {
-    const content = images.map((img) => ({
-      type: 'image',
-      source: { type: 'base64', media_type: img.mediaType, data: img.b64 },
-    }));
+  function userPrompt() {
     let text = 'Write ' + DOC_TYPE_BRIEFS[docType] + '.';
     if (images.length) {
       text += '\n\nThe ' + (images.length > 1 ? images.length + ' screenshots are' : 'screenshot is') +
         ' attached above, in order.';
     }
     text += '\n\nAuthor notes:\n' + notes.value.trim();
-    content.push({ type: 'text', text });
-    return {
-      model: MODEL,
-      max_tokens: 16000,
-      stream: true,
-      thinking: { type: 'adaptive' },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content }],
-    };
+    return text;
   }
 
-  async function streamCompletion(body, apiKey, signal, onText, onPhase) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal,
+  function buildRequest(apiKey) {
+    const text = userPrompt();
+
+    if (provider === 'google') {
+      return {
+        url: 'https://generativelanguage.googleapis.com/v1beta/models/' +
+          PROVIDERS.google.model + ':streamGenerateContent?alt=sse',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        body: {
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{
+            role: 'user',
+            parts: images
+              .map((img) => ({ inlineData: { mimeType: img.mediaType, data: img.b64 } }))
+              .concat([{ text }]),
+          }],
+          generationConfig: { maxOutputTokens: 16000 },
+        },
+      };
+    }
+
+    if (provider === 'openai') {
+      return {
+        url: 'https://api.openai.com/v1/chat/completions',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + apiKey },
+        body: {
+          model: PROVIDERS.openai.model,
+          stream: true,
+          max_completion_tokens: 8192,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            {
+              role: 'user',
+              content: images
+                .map((img) => ({ type: 'image_url', image_url: { url: img.dataUrl } }))
+                .concat([{ type: 'text', text }]),
+            },
+          ],
+        },
+      };
+    }
+
+    return {
+      url: 'https://api.anthropic.com/v1/messages',
       headers: {
         'content-type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify(body),
+      body: {
+        model: PROVIDERS.anthropic.model,
+        max_tokens: 16000,
+        stream: true,
+        thinking: { type: 'adaptive' },
+        system: SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: images
+            .map((img) => ({
+              type: 'image',
+              source: { type: 'base64', media_type: img.mediaType, data: img.b64 },
+            }))
+            .concat([{ type: 'text', text }]),
+        }],
+      },
+    };
+  }
+
+  async function streamCompletion(apiKey, signal, onText, onPhase) {
+    const req = buildRequest(apiKey);
+    const res = await fetch(req.url, {
+      method: 'POST',
+      signal,
+      headers: req.headers,
+      body: JSON.stringify(req.body),
     });
 
     if (!res.ok) {
@@ -436,7 +558,12 @@
         const err = await res.json();
         if (err && err.error && err.error.message) msg = err.error.message;
       } catch (e) { /* non-JSON error body */ }
-      if (res.status === 401) msg = 'Invalid API key. Check it under "API key" in the top bar.';
+      const keyProblem = res.status === 401 || res.status === 403 ||
+        (res.status === 400 && /api key/i.test(msg));
+      if (keyProblem) {
+        msg = 'Invalid ' + PROVIDERS[provider].name +
+          ' API key. Check it under "API key" in the top bar.';
+      }
       if (res.status === 429) msg = 'Rate limited by the API — wait a moment and try again.';
       throw new Error(msg);
     }
@@ -446,29 +573,59 @@
     let buf = '';
     let stopReason = null;
 
-    const handle = (ev) => {
-      if (ev.type === 'content_block_start') {
-        if (ev.content_block.type === 'thinking') onPhase('thinking');
-        if (ev.content_block.type === 'text') onPhase('writing');
-      } else if (ev.type === 'content_block_delta') {
-        if (ev.delta.type === 'text_delta') onText(ev.delta.text);
-      } else if (ev.type === 'message_delta') {
-        if (ev.delta && ev.delta.stop_reason) stopReason = ev.delta.stop_reason;
-      } else if (ev.type === 'error') {
-        throw new Error(ev.error && ev.error.message ? ev.error.message : 'Stream error');
-      }
+    // Normalize each provider's stream events into onPhase/onText/stopReason.
+    const handlers = {
+      anthropic(ev) {
+        if (ev.type === 'content_block_start') {
+          if (ev.content_block.type === 'thinking') onPhase('thinking');
+          if (ev.content_block.type === 'text') onPhase('writing');
+        } else if (ev.type === 'content_block_delta') {
+          if (ev.delta.type === 'text_delta') onText(ev.delta.text);
+        } else if (ev.type === 'message_delta') {
+          if (ev.delta && ev.delta.stop_reason) stopReason = ev.delta.stop_reason;
+        } else if (ev.type === 'error') {
+          throw new Error(ev.error && ev.error.message ? ev.error.message : 'Stream error');
+        }
+      },
+      google(ev) {
+        if (ev.error) throw new Error(ev.error.message || 'Stream error');
+        if (ev.promptFeedback && ev.promptFeedback.blockReason) stopReason = 'refusal';
+        const cand = ev.candidates && ev.candidates[0];
+        if (!cand) return;
+        if (cand.content && cand.content.parts) {
+          cand.content.parts.forEach((p) => {
+            if (p.text && !p.thought) { onPhase('writing'); onText(p.text); }
+          });
+        }
+        if (cand.finishReason === 'MAX_TOKENS') stopReason = 'max_tokens';
+        else if (cand.finishReason === 'SAFETY' || cand.finishReason === 'PROHIBITED_CONTENT') stopReason = 'refusal';
+      },
+      openai(ev) {
+        if (ev.error) throw new Error(ev.error.message || 'Stream error');
+        const choice = ev.choices && ev.choices[0];
+        if (!choice) return;
+        if (choice.delta && choice.delta.content) { onPhase('writing'); onText(choice.delta.content); }
+        if (choice.finish_reason === 'length') stopReason = 'max_tokens';
+        else if (choice.finish_reason === 'content_filter') stopReason = 'refusal';
+      },
     };
+    const handle = handlers[provider];
 
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      buf += decoder.decode(value, { stream: true });
+      // Some providers terminate SSE lines with \r\n; JSON payloads never
+      // contain a raw \r, so normalizing the buffer is safe.
+      buf = (buf + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n');
       let idx;
       while ((idx = buf.indexOf('\n\n')) !== -1) {
         const chunk = buf.slice(0, idx);
         buf = buf.slice(idx + 2);
         chunk.split('\n').forEach((line) => {
-          if (line.startsWith('data:')) handle(JSON.parse(line.slice(5).trim()));
+          if (!line.startsWith('data:')) return;
+          const data = line.slice(5).trim();
+          if (data === '[DONE]') return;
+          handle(JSON.parse(data));
         });
       }
     }
@@ -486,9 +643,10 @@
     }
     const apiKey = getKey();
     if (!apiKey) {
-      keyInput.value = '';
+      setProvider(provider);
       keyDialog.showModal();
-      showError('Save your Anthropic API key, then hit Generate again.');
+      showError('Pick a provider and save its API key, then hit Generate again. ' +
+        'Gemini keys are free.');
       return;
     }
 
@@ -505,7 +663,6 @@
 
     try {
       const stop = await streamCompletion(
-        buildRequestBody(),
         apiKey,
         controller.signal,
         (text) => {
