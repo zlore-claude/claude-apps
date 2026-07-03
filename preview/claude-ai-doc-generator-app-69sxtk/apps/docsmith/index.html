@@ -31,7 +31,7 @@
     }
     @keyframes gl-bar { 0% { left: -40%; } 100% { left: 100%; } }
   </style>
-  <link rel="stylesheet" href="styles.css?v=53bea6c" />
+  <link rel="stylesheet" href="styles.css?v=7aee0fa" />
 </head>
 <body>
   <div id="app-loading">
@@ -113,12 +113,14 @@
 
   <dialog id="key-dialog" class="key-dialog">
     <form method="dialog">
-      <h3>Anthropic API key</h3>
-      <p class="kd-note">
-        Docsmith calls the Claude API directly from your browser. Your key is stored
-        only in this browser (localStorage) and sent only to api.anthropic.com.
-      </p>
-      <input id="key-input" type="password" placeholder="sk-ant-..." autocomplete="off" />
+      <h3>Model &amp; API key</h3>
+      <div id="providers" class="chips kd-chips" role="radiogroup" aria-label="Model provider">
+        <button type="button" class="chip" data-provider="google">Gemini (free)</button>
+        <button type="button" class="chip" data-provider="anthropic">Claude</button>
+        <button type="button" class="chip" data-provider="openai">OpenAI</button>
+      </div>
+      <p class="kd-note" id="kd-note"></p>
+      <input id="key-input" type="password" placeholder="API key" autocomplete="off" />
       <div class="kd-actions">
         <button type="button" id="key-clear" class="btn ghost small">Clear</button>
         <button value="save" id="key-save" class="btn primary small">Save</button>
@@ -126,6 +128,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=53bea6c"></script>
+  <script src="app.js?v=7aee0fa"></script>
 </body>
 </html>
