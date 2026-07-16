@@ -34,7 +34,7 @@
     }
     @keyframes gl-bar { 0% { left: -40%; } 100% { left: 110%; } }
   </style>
-  <link rel="stylesheet" href="styles.css?v=f8dcc33" />
+  <link rel="stylesheet" href="styles.css?v=af4401b" />
 </head>
 <body>
   <div id="app-loading">
@@ -61,16 +61,22 @@
     <nav class="srail" id="srail" aria-label="Boards"></nav>
     <div class="zoomctl" id="zoomctl"></div>
     <nav class="dock" id="dock" aria-label="Dock"></nav>
+    <div class="utilbar" id="utilbar"></div>
+    <div class="btools" id="btools"></div>
+    <div class="stickypanel" id="stickypanel" hidden></div>
   </div>
 
   <!-- v3 Hub: full-screen overview of the whole workspace -->
   <div class="hub" id="hub" hidden></div>
+
+  <!-- v3 modals: timer, confidence vote, plan readout, help -->
+  <div class="pmodal" id="pmodal" hidden></div>
 
   <!-- Command palette (⌘K) — jump to any board, page, team or session -->
   <div class="palette" id="palette" hidden></div>
 
   <input type="file" id="import-file" accept="application/json,.json" hidden />
 
-  <script src="app.js?v=f8dcc33"></script>
+  <script src="app.js?v=af4401b"></script>
 </body>
 </html>
