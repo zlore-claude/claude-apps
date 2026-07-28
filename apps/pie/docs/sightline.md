@@ -61,7 +61,11 @@ plan data, and `state` is exported to JSON.
 `renderSightline()` rebuilds the whole panel each time (like every other layer):
 
 1. **Header** — mark, "Sightline / AI assistant · reads this board", new-chat
-   reset (`data-sl-reset`), close (`data-sl-close`).
+   reset (`data-sl-reset`), close (`data-sl-close`). The mark follows the
+   design version like everything else here — `SL_ICON` maps v1 → sparkle,
+   v2 → eye, v3 → sight/crosshair, v4 → orbit, and `slMark()` renders it for
+   the button, the header and every assistant avatar. It tags the `<svg>` with
+   `sl-i-<name>` so CSS can fill only the sparkle.
 2. **Context chips** — board name, working context, Planning/Execution. This is
    the honesty surface: it shows exactly what the assistant can see.
 3. **Body** (`#sl-body`) — messages; assistant messages get the spark avatar and

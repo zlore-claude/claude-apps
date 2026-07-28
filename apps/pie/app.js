@@ -422,6 +422,10 @@
       activity: '<path d="M3 12h4l2.5 6 4-13 2.5 7H21"/>',
       // Sightline (AI assistant)
       spark: '<path d="M12 3.2l1.75 4.55L18.3 9.5l-4.55 1.75L12 15.8l-1.75-4.55L5.7 9.5l4.55-1.75z"/><path d="M18.4 15.1l.75 1.95 1.95.75-1.95.75-.75 1.95-.75-1.95-1.95-.75 1.95-.75z"/>',
+      // Sightline wears a different mark per design version (see SL_ICON)
+      eye: '<path d="M2.6 12S6.2 6 12 6s9.4 6 9.4 6-3.6 6-9.4 6-9.4-6-9.4-6z"/><circle cx="12" cy="12" r="2.7"/>',
+      scope: '<circle cx="12" cy="12" r="7.3"/><path d="M12 1.8v4.2M12 18v4.2M1.8 12H6M18 12h4.2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
+      orbit: '<circle cx="12" cy="12" r="3.1"/><ellipse cx="12" cy="12" rx="9.6" ry="4.4" transform="rotate(-28 12 12)"/><circle cx="20" cy="8.4" r="1.4" fill="currentColor" stroke="none"/>',
       send: '<path d="M4.5 11.9L20 5l-6.9 15.5-2.4-6.2z"/><path d="M10.7 14.3L20 5"/>',
       restart: '<path d="M20 12a8 8 0 11-2.4-5.7"/><path d="M20 3.5V8h-4.5"/>',
     };
@@ -2579,6 +2583,13 @@
   let slSeenCtx = '';     // board context the last greeting was written for
   let slTimer = 0;
 
+  // One mark per design version, like the other v1–v4 variants in this app:
+  // v1 sparkle · v2 eye · v3 sight/crosshair · v4 orbit.
+  const SL_ICON = { v1: 'spark', v2: 'eye', v3: 'scope', v4: 'orbit' };
+  const slIco = () => SL_ICON[state.navVersion] || 'spark';
+  // the mark carries its name as a class so CSS can fill only the sparkle
+  const slMark = (cls) => bIcon(slIco(), (cls || '') + ' sl-i sl-i-' + slIco());
+
   // *emphasis* becomes <b> — safe because everything is escaped first.
   const slInline = (s) => esc(String(s)).replace(/\*([^*]+)\*/g, '<b>$1</b>');
   const slP = (t) => '<p class="sl-p">' + slInline(t) + '</p>';
@@ -2593,7 +2604,7 @@
     return '<div class="sl-acts">' + items.map((a) => {
       const attr = a.go ? 'data-sl-go="' + esc(a.go) + '"' : 'data-sl-ask="' + esc(a.ask) + '"';
       return '<button class="sl-act" type="button" ' + attr + '>' +
-        bIcon(a.ico || 'spark', 'sl-aico') + esc(a.label || a.ask) + '</button>';
+        (a.ico ? bIcon(a.ico, 'sl-aico') : slMark('sl-aico')) + esc(a.label || a.ask) + '</button>';
     }).join('') + '</div>';
   }
 
@@ -2894,7 +2905,7 @@
   }
   function slMsgHtml(m) {
     if (m.role === 'you') return '<div class="sl-msg you"><div class="sl-bub">' + m.html + '</div></div>';
-    return '<div class="sl-msg ai"><span class="sl-av">' + bIcon('spark') + '</span><div class="sl-bub">' + m.html + '</div></div>';
+    return '<div class="sl-msg ai"><span class="sl-av">' + slMark() + '</span><div class="sl-bub">' + m.html + '</div></div>';
   }
   function renderSightline() {
     if (!slBoardPlane()) {
@@ -2904,7 +2915,7 @@
     }
     slFab.hidden = slOpen;
     if (!slOpen) {
-      slFab.innerHTML = '<span class="sl-fab-mark">' + bIcon('spark') + '</span><span class="sl-fab-l">Sightline</span>';
+      slFab.innerHTML = '<span class="sl-fab-mark">' + slMark() + '</span><span class="sl-fab-l">Sightline</span>';
       slEl.hidden = true; slEl.innerHTML = '';
       return;
     }
@@ -2914,7 +2925,7 @@
     const wasTyping = document.activeElement && document.activeElement.id === 'sl-input';
     slEl.innerHTML =
       '<div class="sl-head">' +
-        '<span class="sl-mark">' + bIcon('spark') + '</span>' +
+        '<span class="sl-mark">' + slMark() + '</span>' +
         '<span class="sl-title"><b>Sightline</b><small>AI assistant · reads this board</small></span>' +
         '<button class="sl-ico" type="button" data-sl-reset title="Start a new chat">' + bIcon('restart') + '</button>' +
         '<button class="sl-ico" type="button" data-sl-close title="Close Sightline">✕</button>' +
@@ -2926,7 +2937,7 @@
       '</div>' +
       '<div class="sl-body" id="sl-body">' +
         slMsgs.map(slMsgHtml).join('') +
-        (slThinking ? '<div class="sl-msg ai"><span class="sl-av">' + bIcon('spark') +
+        (slThinking ? '<div class="sl-msg ai"><span class="sl-av">' + slMark() +
           '</span><div class="sl-bub"><span class="sl-dots"><i></i><i></i><i></i></span></div></div>' : '') +
       '</div>' +
       // the opening message already offers starters — only repeat them once the chat is going
@@ -3716,7 +3727,7 @@
     [['home', 'Home dashboard'], ['sessions', 'PI Sessions'], ['connections', 'ALM Connections'], ['settings', 'PIE Recipe']].forEach((pgd) =>
       items.push({ g: 'App', ico: 'apps', label: pgd[1], go: () => { exitBoard(); navigate(pgd[0]); } }));
     items.push({ g: 'Actions', ico: 'chat', label: 'Toggle conversation panel', go: () => { convoOpen = !convoOpen; if (convoOpen) slOpen = false; if (!boardScreen.hidden) renderBoardView(); } });
-    items.push({ g: 'Actions', ico: 'spark', label: 'Ask Sightline about this board', go: () => {
+    items.push({ g: 'Actions', ico: slIco(), label: 'Ask Sightline about this board', go: () => {
       if (boardScreen.hidden) enterBoard();
       if (mode !== 'board') mode = 'board';
       slToggle(true);
