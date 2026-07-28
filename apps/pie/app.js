@@ -63,6 +63,7 @@
   const canvasWrap = document.getElementById('canvas-wrap');
   const artSide = document.getElementById('art-side');
   const zoomctl = document.getElementById('zoomctl');
+  const sightlineEl = document.getElementById('sightline');
 
   // ---------- State ----------
   let state = load() || sampleState();
@@ -233,6 +234,9 @@
       fit: '<path d="M4 9V5a1 1 0 011-1h4M20 9V5a1 1 0 00-1-1h-4M4 15v4a1 1 0 001 1h4M20 15v4a1 1 0 01-1 1h-4"/>',
       help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 113.5 2.3c-.8.4-1 .8-1 1.7"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/>',
       snap: '<rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 6l1.5-2h3L15 6"/><circle cx="12" cy="12.5" r="3"/>',
+      // Sightline — an eye framed by sight ticks (line of sight over the plan)
+      sightline: '<path d="M2.6 12c2.6-4.2 5.8-6.3 9.4-6.3s7 2.1 9.4 6.3c-2.4 4.2-5.8 6.3-9.4 6.3S5.2 16.2 2.6 12z"/><circle cx="12" cy="12" r="2.8"/><circle cx="12" cy="12" r="0.85" fill="currentColor" stroke="none"/><path d="M12 1.6v2.2M12 20.2v2.2"/>',
+      close: '<path d="M6 6l12 12M18 6L6 18"/>',
     };
     return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (P[name] || '') + '</svg>';
   }
@@ -285,9 +289,15 @@
   // ---------- Floating side rail (static) ----------
   let railActive = 'team';
   let railRight = false; // user's left/right preference (forced right on ART Objectives)
+  // Keep the board screen aware of which side the rail is on, so floating
+  // chrome (Sightline) can step out of its way.
+  function applyRailSide(right) {
+    srail.classList.toggle('srail--right', right);
+    boardScreen.classList.toggle('rail-right', right);
+  }
   function renderSideRail() {
     const forceRight = railActive === 'objectives' && objPanelOpen;
-    srail.classList.toggle('srail--right', forceRight || railRight);
+    applyRailSide(forceRight || railRight);
     const items = [
       ['solbacklog', 'solbacklog', 'Solution Backlog Board'],
       ['solplan', 'solplan', 'Solution Planning Board'],
@@ -479,6 +489,79 @@
       '<button class="z-btn z-help" type="button" title="Help" disabled>' + bIcon('help') + '</button>';
   }
 
+  // ---------- Sightline (floating, boards only — never on the shell/settings) ----------
+  // A single floating action button that opens a compact read on the plan:
+  // load vs. capacity per iteration, objective commitment and open risks.
+  let sightOpen = false;
+  function sightStats() {
+    const perIterCap = state.teams.reduce((a, t) => a + (Number(t.capacity) || 0), 0);
+    const iters = state.sprints.map((name, idx) => {
+      const load = state.cards
+        .filter((c) => c.sprintIdx === idx)
+        .reduce((a, c) => a + (Number(c.points) || 0), 0);
+      return { name, load, cap: perIterCap };
+    });
+    const objs = state.teams
+      .reduce((a, t) => a.concat(t.objectives || []), [])
+      .concat(state.artObjectives || []);
+    return {
+      iters,
+      load: iters.reduce((a, i) => a + i.load, 0),
+      cap: perIterCap * state.sprints.length,
+      committed: objs.filter((o) => o.committed).length,
+      uncommitted: objs.filter((o) => !o.committed).length,
+      risks: state.risks.length,
+      open: state.risks.filter((r) => (r.cat || 'U') === 'U' || r.cat === 'O').length,
+    };
+  }
+  function renderSightline() {
+    const s = sightStats();
+    const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0);
+    const tile = (v, label, cls) =>
+      '<div class="sl-tile' + (cls ? ' ' + cls : '') + '"><b>' + v + '</b><span>' + esc(label) + '</span></div>';
+    const bar = (it) => {
+      const p = pct(it.load, it.cap);
+      return '<div class="sl-row"><span class="sl-name">' + esc(it.name) + '</span>' +
+        '<span class="sl-track"><i class="sl-fill' + (p > 100 ? ' over' : '') + '" style="width:' +
+          Math.min(100, p) + '%"></i></span>' +
+        '<span class="sl-pct' + (p > 100 ? ' over' : '') + '">' + p + '%</span></div>';
+    };
+    sightlineEl.innerHTML =
+      '<div class="sl-panel"' + (sightOpen ? '' : ' hidden') + ' role="dialog" aria-label="Sightline">' +
+        '<div class="sl-head">' + bIcon('sightline', 'sl-hico') + '<b>Sightline</b>' +
+          '<span class="sl-board">' + esc(RAIL_NAMES[railActive] || 'Team Board') + '</span>' +
+          '<button class="sl-x" type="button" data-sight="close" title="Close">' + bIcon('close') + '</button>' +
+        '</div>' +
+        '<div class="sl-tiles">' +
+          tile(s.load, 'Points planned') +
+          tile(pct(s.load, s.cap) + '%', 'Of capacity', pct(s.load, s.cap) > 100 ? 'warn' : '') +
+          tile(s.committed, 'Committed') +
+          tile(s.open, 'Open risks', s.open ? 'warn' : '') +
+        '</div>' +
+        '<div class="sl-sec">Load by iteration</div>' +
+        '<div class="sl-rows">' + s.iters.map(bar).join('') + '</div>' +
+        '<div class="sl-foot">' + s.uncommitted + ' uncommitted · ' + s.risks + ' risks tracked · ' +
+          esc(state.artName) + '</div>' +
+      '</div>' +
+      '<button class="sl-fab' + (sightOpen ? ' on' : '') + '" type="button" data-sight="toggle" ' +
+        'aria-expanded="' + (sightOpen ? 'true' : 'false') + '" title="Sightline — quick read on the plan">' +
+        bIcon('sightline', 'sl-ico') + '<span>Sightline</span></button>';
+  }
+  function closeSightline() {
+    if (!sightOpen) return;
+    sightOpen = false;
+    renderSightline();
+  }
+  sightlineEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sight]');
+    if (!b) return;
+    e.stopPropagation();
+    if (b.dataset.sight === 'toggle') sightOpen = !sightOpen;
+    else sightOpen = false;
+    renderSightline();
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#sightline')) closeSightline(); });
+
   // ---------- Bounded view transform (pan + zoom) ----------
   // 100% = whole board fit in the viewport (with a little padding). You can
   // only zoom IN from there; panning is clamped to the board's edges.
@@ -542,7 +625,7 @@
     if (v === 'shift') {
       if (railActive === 'objectives' && objPanelOpen) return; // locked to the right here
       railRight = !railRight;
-      srail.classList.toggle('srail--right', railRight);
+      applyRailSide(railRight);
       requestAnimationFrame(fitView);
       return;
     }
@@ -570,6 +653,7 @@
     renderSideRail();
     renderArtSide();
     renderZoomCtl();
+    renderSightline();
     renderCanvas();
     fitView();
   }
@@ -827,6 +911,7 @@
     renderBoardView();
   }
   function exitBoard() {
+    sightOpen = false;
     boardScreen.hidden = true; shell.hidden = false;
     navigate(currentPage);
   }
@@ -975,7 +1060,7 @@
 
   // ---------- Global ----------
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeUserMenu();
+    if (e.key === 'Escape') { closeUserMenu(); closeSightline(); }
   });
 
   function fullRender() {

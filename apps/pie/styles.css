@@ -199,6 +199,68 @@ body {
 .z-btn:hover { background: #f1f2f6; color: #1b1f27; }
 .z-val { min-width: 44px; text-align: center; font-size: 12.5px; font-weight: 700; color: #44505f; font-variant-numeric: tabular-nums; }
 
+/* ---------- Sightline (floating action button + quick-read panel) ---------- */
+/* Sits clear of the side rail — steps back to the edge when the rail moves right. */
+.sightline {
+  position: absolute; left: 88px; bottom: 18px; z-index: 41;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  transition: left .18s ease;
+}
+.board-screen.rail-right .sightline { left: 18px; }
+.board-screen.obj-mode.obj-open .sightline { left: 492px; }
+.sl-fab {
+  display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 13px;
+  border: 1px solid var(--r-line); border-radius: 22px; background: #fff; color: #1b1f27;
+  font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(20,30,50,.16);
+  transition: transform .14s ease, box-shadow .14s ease, background .14s ease, color .14s ease;
+}
+.sl-fab .sl-ico { width: 20px; height: 20px; stroke: var(--accent); flex: 0 0 auto; }
+.sl-fab:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(20,30,50,.2); }
+.sl-fab.on { background: #1b1f27; color: #fff; border-color: #1b1f27; }
+.sl-fab.on .sl-ico { stroke: var(--accent); }
+
+.sl-panel {
+  width: 316px; padding: 14px 16px 12px; max-height: calc(100vh - 130px); overflow: auto;
+  background: #fff; border: 1px solid var(--r-line); border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(20,30,50,.18);
+}
+.sl-panel[hidden] { display: none; }
+.sl-head { display: flex; align-items: center; gap: 8px; }
+.sl-head b { font-size: 14px; }
+.sl-hico { width: 18px; height: 18px; stroke: var(--accent); flex: 0 0 auto; }
+.sl-board { margin-left: 2px; font-size: 11.5px; font-weight: 600; color: var(--r-dim); }
+.sl-x {
+  margin-left: auto; width: 26px; height: 26px; border-radius: 7px; border: 1px solid transparent;
+  background: transparent; color: #9aa1ad; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.sl-x svg { width: 15px; height: 15px; stroke: currentColor; }
+.sl-x:hover { background: #f1f2f6; color: #1b1f27; }
+
+.sl-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+.sl-tile { background: #f6f7fa; border-radius: 10px; padding: 9px 10px; }
+.sl-tile b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+.sl-tile span { display: block; margin-top: 1px; font-size: 11px; color: var(--r-dim); }
+.sl-tile.warn { background: #fdeeee; }
+.sl-tile.warn b { color: #c0392b; }
+
+.sl-sec { margin: 14px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--r-faint); }
+.sl-rows { display: flex; flex-direction: column; gap: 6px; }
+.sl-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--r-dim); }
+.sl-name { flex: 0 0 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-track { flex: 1 1 auto; height: 6px; border-radius: 4px; background: #eceef3; overflow: hidden; }
+.sl-fill { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.sl-fill.over { background: #ef4444; }
+.sl-pct { flex: 0 0 34px; text-align: right; font-weight: 700; color: #44505f; font-variant-numeric: tabular-nums; }
+.sl-pct.over { color: #c0392b; }
+.sl-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--r-line); font-size: 11px; color: var(--r-faint); }
+
+@media (max-width: 720px) {
+  .sl-fab span { display: none; }
+  .sl-fab { width: 44px; padding: 0; justify-content: center; }
+  .sl-panel { width: min(316px, calc(100vw - 40px)); }
+}
+
 /* ---------- ART Objectives: contextual nav + side panel + masonry ---------- */
 .bn-here { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 6px; font-weight: 700; font-size: 14px; }
 .bn-here .bn-cico { stroke: #1b1f27; }
