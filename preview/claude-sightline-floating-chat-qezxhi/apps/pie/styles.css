@@ -2002,7 +2002,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--accent), #b45309);
 }
-.sl-fab-mark svg { width: 18px; height: 18px; stroke: #fff; fill: rgba(255, 255, 255, 0.3); }
+.sl-fab-mark svg { width: 18px; height: 18px; stroke: #fff; fill: none; }
 .sl-fab-l { padding-right: 2px; }
 
 .sightline { display: none; }
@@ -2023,7 +2023,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--accent), #b45309);
 }
-.sl-mark svg { width: 19px; height: 19px; stroke: #fff; fill: rgba(255, 255, 255, 0.3); }
+.sl-mark svg { width: 19px; height: 19px; stroke: #fff; fill: none; }
 .sl-title { flex: 1 1 auto; min-width: 0; }
 .sl-title b { display: block; font-size: 14.5px; line-height: 1.2; }
 .sl-title small { display: block; font-size: 11px; color: var(--r-faint); }
@@ -2050,7 +2050,9 @@ body {
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--accent), #b45309);
 }
-.sl-av svg { width: 15px; height: 15px; stroke: #fff; fill: rgba(255, 255, 255, 0.3); }
+.sl-av svg { width: 15px; height: 15px; stroke: #fff; fill: none; }
+/* the v1 sparkle is the only mark that reads better filled */
+.sl-fab-mark svg.sl-i-spark, .sl-mark svg.sl-i-spark, .sl-av svg.sl-i-spark { fill: rgba(255, 255, 255, 0.3); }
 .sl-bub { min-width: 0; font-size: 12.5px; color: #2c333f; }
 .sl-msg.ai .sl-bub { max-width: 296px; background: #f8f9fb; border: 1px solid var(--r-line); border-radius: 13px 13px 13px 4px; padding: 10px 12px; }
 .sl-msg.you .sl-bub { max-width: 250px; background: #1b1f27; color: #fff; border-radius: 13px 13px 4px 13px; padding: 8px 12px; }
