@@ -34,7 +34,7 @@
     }
     @keyframes gl-bar { 0% { left: -40%; } 100% { left: 110%; } }
   </style>
-  <link rel="stylesheet" href="styles.css?v=11bc3e1" />
+  <link rel="stylesheet" href="styles.css?v=863783b" />
 </head>
 <body>
   <div id="app-loading">
@@ -66,6 +66,9 @@
     <div class="stickybar" id="stickybar" hidden></div>
     <div class="pinbanner" id="pinbanner" hidden></div>
     <div class="verfab" id="verfab" hidden></div>
+    <!-- Sightline: floating AI assistant for the board (button + right side-panel) -->
+    <aside class="sightline" id="sightline" aria-label="Sightline assistant" hidden></aside>
+    <button class="sl-fab" id="sl-fab" type="button" aria-label="Open Sightline" hidden></button>
   </div>
 
   <!-- v3 Hub: full-screen overview of the whole workspace -->
@@ -79,6 +82,6 @@
 
   <input type="file" id="import-file" accept="application/json,.json" hidden />
 
-  <script src="app.js?v=11bc3e1"></script>
+  <script src="app.js?v=863783b"></script>
 </body>
 </html>
